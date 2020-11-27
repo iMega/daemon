@@ -16,6 +16,7 @@ package daemon
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -38,12 +39,16 @@ type Daemon interface {
 }
 
 // New create a new Daemon.
-func New(l logrus.FieldLogger) Daemon {
+func New(l logrus.FieldLogger, cr ConfigReader) (Daemon, error) {
 	d := &daemon{
 		Log: l,
 	}
 
-	return d
+	if err := cr.Read(); err != nil {
+		return nil, fmt.Errorf("failed to read config: %w", err)
+	}
+
+	return d, nil
 }
 
 // Run daemon.
@@ -93,3 +98,14 @@ func (d *daemon) shutdown(timeout time.Duration) error {
 		return nil
 	}
 }
+
+// ConfigReader .
+type ConfigReader interface {
+	Read() error
+}
+
+// ApplyConfigFunc .
+type ApplyConfigFunc func(conf, reset map[string]string)
+
+// WatcherConfigFunc .
+type WatcherConfigFunc func() ([]string, ApplyConfigFunc)

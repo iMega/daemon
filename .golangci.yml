@@ -4,6 +4,7 @@ run:
   tests: false
   skip-dirs:
     - tests
+    - daemon-gen
 
 output:
   format: colored-line-number

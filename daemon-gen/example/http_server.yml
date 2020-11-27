@@ -1,0 +1,6 @@
+config:
+  name: sdf
+  logger:
+    channel: ch
+    formatter:
+      TimestampFormat: "yyyy-MM-dd HH:mm:ss"
