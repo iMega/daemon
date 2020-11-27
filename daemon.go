@@ -108,4 +108,11 @@ type ConfigReader interface {
 type ApplyConfigFunc func(conf, reset map[string]string)
 
 // WatcherConfigFunc .
-type WatcherConfigFunc func() ([]string, ApplyConfigFunc)
+type WatcherConfigFunc func() WatcherConfig
+
+// WatcherConfig .
+type WatcherConfig struct {
+	Prefix    string
+	Keys      []string
+	ApplyFunc ApplyConfigFunc
+}

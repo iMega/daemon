@@ -19,6 +19,8 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/imega/daemon"
 )
 
 // Read retrieves the value of the environment variable named by the key.
@@ -62,4 +64,33 @@ func Read(key string) (string, error) {
 	}
 
 	return os.Getenv(key), nil
+}
+
+type watcher struct {
+	f []daemon.WatcherConfigFunc
+}
+
+// Once .
+func Once(f ...daemon.WatcherConfigFunc) daemon.ConfigReader {
+	return &watcher{f}
+}
+
+func (w *watcher) Read() error {
+	for _, fn := range w.f {
+		mapKeys := make(map[string]string)
+		wConf := fn()
+
+		for _, k := range wConf.Keys {
+			env := strings.ReplaceAll(wConf.Prefix+k, "/", "_")
+			env = strings.ReplaceAll(env, "-", "_")
+			v, _ := Read(env)
+			if v != "" {
+				mapKeys[wConf.Prefix+k] = v
+			}
+		}
+
+		wConf.ApplyFunc(mapKeys, nil)
+	}
+
+	return nil
 }
