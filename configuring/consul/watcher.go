@@ -24,13 +24,13 @@ import (
 )
 
 type watcher struct {
-	log      *logrus.Entry
+	log      logrus.FieldLogger
 	wathFunc []daemon.WatcherConfigFunc
 	LastConf map[string]map[string]string
 }
 
 // Watch .
-func Watch(log *logrus.Entry, f ...daemon.WatcherConfigFunc) daemon.ConfigReader {
+func Watch(log logrus.FieldLogger, f ...daemon.WatcherConfigFunc) daemon.ConfigReader {
 	return &watcher{log: log, wathFunc: f}
 }
 
