@@ -1,0 +1,71 @@
+version: "3"
+
+services:
+  appconsul:
+    build:
+      context: .
+      dockerfile: ./tests/app-consul/Dockerfile
+      args:
+        - GO_IMG=${GO_IMG}
+        - CWD=${CWD}
+    volumes:
+      - ./:${CWD}
+    working_dir: ${CWD}
+    environment:
+      - CONSUL_HTTP_ADDR=consul:8500
+      - TEST_HTTP_ADDR=0.0.0.0:80
+
+  consul:
+    image: imega/consul
+    volumes:
+      - ./tests/fixtures:/data
+    ports:
+      - 8500:8500
+
+  mysql1:
+    image: mysql:5.7.19
+    environment:
+      - MYSQL_ROOT_PASSWORD=qwerty
+    volumes:
+      - ./tests/fixtures/mysql1.sql:/docker-entrypoint-initdb.d/0.sql
+
+  mysql2:
+    image: mysql:5.7.19
+    environment:
+      - MYSQL_ROOT_PASSWORD=qwerty
+    volumes:
+      - ./tests/fixtures/mysql2.sql:/docker-entrypoint-initdb.d/0.sql
+
+  redis0:
+    image: redis:2.8.20
+    command: redis-server --appendonly yes --port 6379
+
+  sentinel0:
+    image: redis:2.8.20
+    volumes:
+      - ./tests/sentinel0.conf:/sentinel.conf
+    command: ["redis-sentinel", "/sentinel.conf"]
+
+  redis1:
+    image: redis:2.8.20
+    command: redis-server --appendonly yes --port 16379
+
+  sentinel1:
+    image: redis:2.8.20
+    volumes:
+      - ./tests/sentinel1.conf:/sentinel.conf
+    command: ["redis-sentinel", "/sentinel.conf"]
+
+  acceptance:
+    image: ${GO_IMG}
+    environment:
+      - CONSUL_HTTP_ADDR=consul:8500
+      - GOFLAGS=
+    volumes:
+      - ./:${CWD}
+    working_dir: ${CWD}
+    command: >
+      /bin/sh -c "
+        apk add --upd alpine-sdk gcc && \
+        go test -v ${CWD}/tests
+      "

@@ -30,6 +30,7 @@ type daemon struct {
 	Log logrus.FieldLogger
 
 	sf []ShutdownFunc
+	hf []HealthCheckFunc
 }
 
 // Daemon is a interface.
@@ -99,6 +100,13 @@ func (d *daemon) shutdown(timeout time.Duration) error {
 	}
 }
 
+// HealthCheckFunc .
+type HealthCheckFunc func() bool
+
+func (d *daemon) RegisterHealthCheckFunc(f HealthCheckFunc) {
+	d.hf = append(d.hf, f)
+}
+
 // ConfigReader .
 type ConfigReader interface {
 	Read() error
@@ -113,6 +121,7 @@ type WatcherConfigFunc func() WatcherConfig
 // WatcherConfig .
 type WatcherConfig struct {
 	Prefix    string
+	MainKey   string
 	Keys      []string
 	ApplyFunc ApplyConfigFunc
 }

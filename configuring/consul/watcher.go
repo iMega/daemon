@@ -31,7 +31,11 @@ type watcher struct {
 
 // Watch .
 func Watch(log logrus.FieldLogger, f ...daemon.WatcherConfigFunc) daemon.ConfigReader {
-	return &watcher{log: log, wathFunc: f}
+	return &watcher{
+		log:      log,
+		wathFunc: f,
+		LastConf: make(map[string]map[string]string),
+	}
 }
 
 func (w *watcher) Read() error {
@@ -39,45 +43,45 @@ func (w *watcher) Read() error {
 	conf := api.DefaultConfigWithLogger(hlog)
 
 	for _, fn := range w.wathFunc {
-		keys, cb := fn()
+		wConf := fn()
 
-		for _, k := range keys {
-			plan, err := watch.Parse(map[string]interface{}{
-				"type":   "keyprefix",
-				"prefix": k,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to parse keys: %w", err)
-			}
+		k := wConf.Prefix + "/" + wConf.MainKey
 
-			plan.Logger = hlog
-
-			func(p *watch.Plan, cb daemon.ApplyConfigFunc, k string) {
-				p.HybridHandler = func(v watch.BlockingParamVal, i interface{}) {
-					m := make(map[string]string)
-
-					if pairs, ok := i.(api.KVPairs); ok {
-						for _, pair := range pairs {
-							m[pair.Key] = string(pair.Value)
-						}
-					}
-
-					if len(m) == 0 {
-						return
-					}
-
-					cb(m, keys4reset(m, w.LastConf[k]))
-
-					w.LastConf[k] = m
-				}
-			}(plan, cb, k)
-
-			go func() {
-				if err := plan.RunWithConfig(conf.Address, conf); err != nil {
-					w.log.Error(err)
-				}
-			}()
+		plan, err := watch.Parse(map[string]interface{}{
+			"type":   "keyprefix",
+			"prefix": k,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to parse keys: %w", err)
 		}
+
+		plan.Logger = hlog
+
+		func(p *watch.Plan, cb daemon.ApplyConfigFunc, k string) {
+			p.HybridHandler = func(v watch.BlockingParamVal, i interface{}) {
+				m := make(map[string]string)
+
+				if pairs, ok := i.(api.KVPairs); ok {
+					for _, pair := range pairs {
+						m[pair.Key] = string(pair.Value)
+					}
+				}
+
+				if len(m) == 0 {
+					return
+				}
+
+				cb(m, keys4reset(m, w.LastConf[k]))
+
+				w.LastConf[k] = m
+			}
+		}(plan, wConf.ApplyFunc, k)
+
+		go func() {
+			if err := plan.RunWithConfig(conf.Address, conf); err != nil {
+				w.log.Error(err)
+			}
+		}()
 	}
 
 	return nil

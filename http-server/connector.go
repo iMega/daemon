@@ -16,10 +16,15 @@ package httpserver
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/imega/daemon"
+	"github.com/improbable-eng/go-httpwares"
+	http_logrus "github.com/improbable-eng/go-httpwares/logging/logrus"
+	http_ctxtags "github.com/improbable-eng/go-httpwares/tags"
 	"github.com/sirupsen/logrus"
 )
 
@@ -58,10 +63,13 @@ func New(prefix string, l logrus.FieldLogger, handler http.Handler) *Connector {
 		prefix:  prefix,
 	}
 
-	c.WatcherConfigFunc = func() ([]string, daemon.ApplyConfigFunc) {
-		keys := []string{c.prefix + "/http-server"}
-
-		return keys, c.connect
+	c.WatcherConfigFunc = func() daemon.WatcherConfig {
+		return daemon.WatcherConfig{
+			Prefix:    prefix,
+			MainKey:   "http-server",
+			Keys:      []string{""},
+			ApplyFunc: c.connect,
+		}
 	}
 
 	c.ShutdownFunc = func() {
@@ -77,4 +85,138 @@ func New(prefix string, l logrus.FieldLogger, handler http.Handler) *Connector {
 	return c
 }
 
-func (c *Connector) connect(conf, last map[string]string) {}
+func (c *Connector) newServer() *http.Server {
+	var log *logrus.Entry
+	if e, ok := c.log.(*logrus.Entry); ok {
+		log = e
+	}
+
+	opts := []http_logrus.Option{
+		http_logrus.WithDecider(
+			func(w httpwares.WrappedResponseWriter, r *http.Request) bool {
+				return w.StatusCode() != http.StatusOK
+			},
+		),
+	}
+
+	return &http.Server{
+		Addr: c.conf.Addr,
+		Handler: http_ctxtags.Middleware("http")(
+			http_logrus.Middleware(log, opts...)(c.handler),
+		),
+		ReadTimeout:       c.conf.ReadTimeout,
+		ReadHeaderTimeout: c.conf.ReadHeaderTimeout,
+		WriteTimeout:      c.conf.WriteTimeout,
+		IdleTimeout:       c.conf.IdleTimeout,
+		MaxHeaderBytes:    c.conf.MaxHeaderBytes,
+	}
+}
+
+func (c *Connector) connect(conf, last map[string]string) {
+	reset := c.reset(last)
+	config := c.config(conf)
+	if !reset && !config {
+		c.log.Debug("http connector has same configuration")
+
+		return
+	}
+
+	if c.srv != nil {
+		c.log.Debugf("http connector start shutdown, %s", c.conf.Addr)
+		if err := c.srv.Shutdown(context.Background()); err != nil {
+			c.log.Error(err)
+		}
+		c.log.Debugf("http connector end shutdown")
+		c.srv = nil
+	}
+
+	c.srv = c.newServer()
+
+	go func() {
+		c.log.Debugf("http connector start on %s", c.conf.Addr)
+		if err := c.srv.ListenAndServe(); err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				c.log.Error(err)
+			}
+		}
+	}()
+}
+
+func (c *Connector) config(conf map[string]string) bool {
+	needUpdate := false
+
+	for k, v := range conf {
+		switch k {
+		case c.prefix + "/http-server/host":
+			needUpdate = needUpdate || c.conf.Addr != v
+			c.conf.Addr = v
+
+		case c.prefix + "/http-server/read-timeout":
+			if d, err := time.ParseDuration(v); err == nil {
+				needUpdate = needUpdate || c.conf.ReadTimeout != d
+				c.conf.ReadTimeout = d
+			}
+
+		case c.prefix + "/http-server/read-header-timeout":
+			if d, err := time.ParseDuration(v); err == nil {
+				needUpdate = needUpdate || c.conf.ReadHeaderTimeout != d
+				c.conf.ReadHeaderTimeout = d
+			}
+
+		case c.prefix + "/http-server/write-timeout":
+			if d, err := time.ParseDuration(v); err == nil {
+				needUpdate = needUpdate || c.conf.WriteTimeout != d
+				c.conf.WriteTimeout = d
+			}
+
+		case c.prefix + "/http-server/idle-timeout":
+			if d, err := time.ParseDuration(v); err == nil {
+				needUpdate = needUpdate || c.conf.IdleTimeout != d
+				c.conf.IdleTimeout = d
+			}
+
+		case c.prefix + "/http-server/max-header-bytes":
+			if i, err := strconv.Atoi(v); err == nil {
+				needUpdate = needUpdate || c.conf.MaxHeaderBytes != i
+				c.conf.MaxHeaderBytes = i
+			}
+		}
+	}
+
+	return needUpdate
+}
+
+func (c *Connector) reset(last map[string]string) bool {
+	needUpdate := false
+
+	for k := range last {
+		switch k {
+		case c.prefix + "/http-server/host":
+			needUpdate = true
+			c.conf.Addr = "0.0.0.0:65534"
+
+		case c.prefix + "/http-server/read-timeout":
+			needUpdate = true
+			c.conf.ReadTimeout = 2 * time.Second
+
+		case c.prefix + "/http-server/read-header-timeout":
+			needUpdate = true
+			c.conf.ReadHeaderTimeout = 2 * time.Second
+
+		case c.prefix + "/http-server/write-timeout":
+			needUpdate = true
+			c.conf.WriteTimeout = 2 * time.Second
+
+		case c.prefix + "/http-server/idle-timeout":
+			needUpdate = true
+			c.conf.IdleTimeout = 2 * time.Second
+
+		case c.prefix + "/http-server/max-header-bytes":
+			needUpdate = true
+			c.conf.MaxHeaderBytes = http.DefaultMaxHeaderBytes
+
+		}
+	}
+
+	return needUpdate
+}
