@@ -27,8 +27,7 @@ var _ = Describe("reconnect mysql", func() {
 
 			for attempts := 30; attempts > 0; attempts-- {
 
-				b, err := helper.Request("http://appconsul:80/test_mysql_reconnect_between_instances")
-				Expect(err).NotTo(HaveOccurred())
+				b, _ := helper.Request("http://appconsul:80/test_mysql_reconnect_between_instances")
 
 				if bytes.Compare(b, expected) == 0 {
 					actual = b
@@ -56,8 +55,7 @@ var _ = Describe("reconnect mysql", func() {
 
 			for attempts := 30; attempts > 0; attempts-- {
 
-				b, err := helper.Request("http://appconsul:80/test_mysql_reconnect_between_instances")
-				Expect(err).NotTo(HaveOccurred())
+				b, _ := helper.Request("http://appconsul:80/test_mysql_reconnect_between_instances")
 
 				if bytes.Compare(b, expected) == 0 {
 					actual = b

@@ -36,7 +36,7 @@ type daemon struct {
 // Daemon is a interface.
 type Daemon interface {
 	Run(shutdownTimeout time.Duration) error
-	RegisterShutdownFunc(f ShutdownFunc)
+	RegisterShutdownFunc(f ...ShutdownFunc)
 }
 
 // New create a new Daemon.
@@ -65,8 +65,8 @@ func (d *daemon) Run(shutdownTimeout time.Duration) error {
 type ShutdownFunc func()
 
 // RegisterShutdownFunc .
-func (d *daemon) RegisterShutdownFunc(f ShutdownFunc) {
-	d.sf = append(d.sf, f)
+func (d *daemon) RegisterShutdownFunc(f ...ShutdownFunc) {
+	d.sf = append(d.sf, f...)
 }
 
 // ErrShutdownTimeout .

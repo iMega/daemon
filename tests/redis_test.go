@@ -26,8 +26,7 @@ var _ = Describe("reconnect redis", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			for attempts := 30; attempts > 0; attempts-- {
-				b, err := helper.Request("http://appconsul:80/test_redis_reconnect_between_instances")
-				Expect(err).NotTo(HaveOccurred())
+				b, _ := helper.Request("http://appconsul:80/test_redis_reconnect_between_instances")
 
 				if bytes.Contains(b, expected) {
 					actual = b
@@ -54,8 +53,7 @@ var _ = Describe("reconnect redis", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			for attempts := 30; attempts > 0; attempts-- {
-				b, err := helper.Request("http://appconsul:80/test_redis_reconnect_between_instances")
-				Expect(err).NotTo(HaveOccurred())
+				b, _ := helper.Request("http://appconsul:80/test_redis_reconnect_between_instances")
 
 				if bytes.Contains(b, expected) {
 					actual = b

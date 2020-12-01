@@ -31,11 +31,10 @@ var _ = Describe("reconnect grpc-server", func() {
 			hc := grpc_health_v1.NewHealthClient(cc)
 			for attempts := 30; attempts > 0; attempts-- {
 
-				resp, err := hc.Check(
+				resp, _ := hc.Check(
 					context.Background(),
 					&grpc_health_v1.HealthCheckRequest{},
 				)
-				Expect(err).NotTo(HaveOccurred())
 
 				if resp.GetStatus() == grpc_health_v1.HealthCheckResponse_SERVING {
 					actual = resp.GetStatus()
@@ -66,11 +65,10 @@ var _ = Describe("reconnect grpc-server", func() {
 			hc := grpc_health_v1.NewHealthClient(cc)
 			for attempts := 30; attempts > 0; attempts-- {
 
-				resp, err := hc.Check(
+				resp, _ := hc.Check(
 					context.Background(),
 					&grpc_health_v1.HealthCheckRequest{},
 				)
-				Expect(err).NotTo(HaveOccurred())
 
 				if resp.GetStatus() == grpc_health_v1.HealthCheckResponse_SERVING {
 					actual = resp.GetStatus()

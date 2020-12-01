@@ -84,6 +84,14 @@ func main() {
 		}
 	}()
 
+	d.RegisterShutdownFunc(
+		h.ShutdownFunc,
+		g.ShutdownFunc,
+		g1.ShutdownFunc,
+		m.ShutdownFunc,
+		r.ShutdownFunc,
+	)
+
 	d.RegisterShutdownFunc(func() {
 		if err := srvTest.Shutdown(context.Background()); err != nil {
 			log.Error(err)
