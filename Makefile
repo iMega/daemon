@@ -10,7 +10,7 @@ lint:
 
 unit:
 	@docker run --rm -w $(CWD) -v $(CURDIR):$(CWD) \
-		$(GO_IMG) sh -c "go list ./... | xargs go test -vet=off -coverprofile cover.out"
+		$(GO_IMG) sh -c "go list ./... | grep -v 'tests' | xargs go test -vet=off -coverprofile cover.out"
 
 acceptance: down
 	GO_IMG=$(GO_IMG) CWD=$(CWD) docker-compose up -d --build --scale acceptance=0
