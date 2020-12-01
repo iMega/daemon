@@ -10,14 +10,14 @@ import (
 
 type fakerDB struct{}
 
-const errFaker = "it is a faker database"
+var errFaker = errors.New("it is a faker database")
 
 func (f *fakerDB) Begin() (*sql.Tx, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) BeginTx(context.Context, *sql.TxOptions) (*sql.Tx, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) Close() error {
@@ -25,7 +25,7 @@ func (f *fakerDB) Close() error {
 }
 
 func (f *fakerDB) Conn(context.Context) (*sql.Conn, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) Driver() driver.Driver {
@@ -33,35 +33,35 @@ func (f *fakerDB) Driver() driver.Driver {
 }
 
 func (f *fakerDB) Exec(string, ...interface{}) (sql.Result, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) ExecContext(context.Context, string, ...interface{}) (sql.Result, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) Ping() error {
-	return errors.New(errFaker)
+	return errFaker
 }
 
 func (f *fakerDB) PingContext(context.Context) error {
-	return errors.New(errFaker)
+	return errFaker
 }
 
 func (f *fakerDB) Prepare(string) (*sql.Stmt, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) PrepareContext(context.Context, string) (*sql.Stmt, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) Query(string, ...interface{}) (*sql.Rows, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error) {
-	return nil, errors.New(errFaker)
+	return nil, errFaker
 }
 
 func (f *fakerDB) QueryRow(string, ...interface{}) *sql.Row {

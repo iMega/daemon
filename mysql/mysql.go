@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Connector is wrapper sql.DB
+// Connector is wrapper sql.DB.
 type Connector struct {
 	log logrus.FieldLogger
 
@@ -30,7 +30,9 @@ type Connector struct {
 	daemon.ShutdownFunc
 }
 
-// New get a instance of mysql
+const maxIdleConns = 2
+
+// New get a instance of mysql.
 func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
 	db := &Connector{
 		log: l,
@@ -40,7 +42,7 @@ func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
 		opts:     mysql.NewConfig(),
 		DB:       &fakerDB{},
 
-		maxIdleConns: 2,
+		maxIdleConns: maxIdleConns,
 	}
 
 	db.WatcherConfigFuncs = []daemon.WatcherConfigFunc{
@@ -100,6 +102,7 @@ func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
 func (db *Connector) connect(conf, last map[string]string) {
 	reset := db.reset(last)
 	config := db.config(conf)
+
 	if !reset && !config {
 		db.log.Debug("mysql connector has same configuration")
 
@@ -115,7 +118,9 @@ func (db *Connector) connect(conf, last map[string]string) {
 		if err := db.DB.Close(); err != nil {
 			db.log.Error(err)
 		}
+
 		db.log.Debug("mysql connection closed")
+
 		db.DB = &fakerDB{}
 	}
 
@@ -163,6 +168,8 @@ func clientConfig() []string {
 	}
 }
 
+const maxAllowedPacket = 4 << 20 // 4 MiB
+
 func (db *Connector) reset(last map[string]string) bool {
 	needUpdate := false
 
@@ -198,7 +205,7 @@ func (db *Connector) reset(last map[string]string) bool {
 
 		case db.pxClient + "/max-allowed-packet":
 			needUpdate = true
-			db.opts.MaxAllowedPacket = 4 << 20 // 4 MiB
+			db.opts.MaxAllowedPacket = maxAllowedPacket
 
 		case db.pxClient + "/server-pub-key":
 			needUpdate = true
@@ -289,6 +296,8 @@ func (db *Connector) reset(last map[string]string) bool {
 	return needUpdate
 }
 
+const valueTrue = "true"
+
 func (db *Connector) config(conf map[string]string) bool {
 	needUpdate := false
 
@@ -357,59 +366,59 @@ func (db *Connector) config(conf map[string]string) bool {
 			}
 
 		case db.pxClient + "/allow-all-files":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.AllowAllFiles != val
-			db.opts.AllowAllFiles = v == "true"
+			db.opts.AllowAllFiles = v == valueTrue
 
 		case db.pxClient + "/allow-cleartext-passwords":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.AllowCleartextPasswords != val
-			db.opts.AllowCleartextPasswords = v == "true"
+			db.opts.AllowCleartextPasswords = v == valueTrue
 
 		case db.pxClient + "/allow-native-passwords":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.AllowNativePasswords != val
-			db.opts.AllowNativePasswords = v == "true"
+			db.opts.AllowNativePasswords = v == valueTrue
 
 		case db.pxClient + "/allow-old-passwords":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.AllowOldPasswords != val
-			db.opts.AllowOldPasswords = v == "true"
+			db.opts.AllowOldPasswords = v == valueTrue
 
 		case db.pxClient + "/check-conn-liveness":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.CheckConnLiveness != val
-			db.opts.CheckConnLiveness = v == "true"
+			db.opts.CheckConnLiveness = v == valueTrue
 
 		case db.pxClient + "/client-found-rows":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.ClientFoundRows != val
-			db.opts.ClientFoundRows = v == "true"
+			db.opts.ClientFoundRows = v == valueTrue
 
 		case db.pxClient + "/columns-with-alias":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.ColumnsWithAlias != val
-			db.opts.ColumnsWithAlias = v == "true"
+			db.opts.ColumnsWithAlias = v == valueTrue
 
 		case db.pxClient + "/interpolate-params":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.InterpolateParams != val
-			db.opts.InterpolateParams = v == "true"
+			db.opts.InterpolateParams = v == valueTrue
 
 		case db.pxClient + "/multi-statements":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.MultiStatements != val
-			db.opts.MultiStatements = v == "true"
+			db.opts.MultiStatements = v == valueTrue
 
 		case db.pxClient + "/parse-time":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.ParseTime != val
 			db.opts.ParseTime = val
 
 		case db.pxClient + "/reject-read-only":
-			val := v == "true"
+			val := v == valueTrue
 			needUpdate = needUpdate || db.opts.RejectReadOnly != val
-			db.opts.RejectReadOnly = v == "true"
+			db.opts.RejectReadOnly = v == valueTrue
 
 		case db.pxClient + "/params":
 			m := map[string]string{}

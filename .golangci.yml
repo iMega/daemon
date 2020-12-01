@@ -19,3 +19,7 @@ linters:
   enable-all: true
   disable:
     - exhaustivestruct
+    - funlen
+    - nestif
+    - gocognit
+    - gocyclo

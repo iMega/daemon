@@ -15,6 +15,26 @@ services:
       - CONSUL_HTTP_ADDR=consul:8500
       - TEST_HTTP_ADDR=0.0.0.0:80
 
+  appenv:
+    build:
+      context: .
+      dockerfile: ./tests/app-env/Dockerfile
+      args:
+        - GO_IMG=${GO_IMG}
+        - CWD=${CWD}
+    volumes:
+      - ./:${CWD}
+    working_dir: ${CWD}
+    environment:
+      - CLIENT_GRPC_HOST=0.0.0.0:9000
+      - TESTCLIENT_GRPC_HOST=0.0.0.0:9001
+      - INSTANCE_MYSQL_HOST=mysql1:3306
+      - CLIENT_MYSQL_USER=root
+      - CLIENT_MYSQL_PASSWORD=qwerty
+      - INSTANCE_REDIS-SENTINEL_HOST_INSTANCE-0=sentinel0:26379
+      - INSTANCE_REDIS-SENTINEL_HOST_INSTANCE-1=sentinel1:26379
+      - RCLIENT_REDIS-SENTINEL_MASTER-NAME=rediska
+
   consul:
     image: imega/consul
     volumes:

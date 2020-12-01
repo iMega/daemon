@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// DB is a sql interface
+// DB is a sql interface.
 type DB interface {
 	Begin() (*sql.Tx, error)
 	BeginTx(context.Context, *sql.TxOptions) (*sql.Tx, error)

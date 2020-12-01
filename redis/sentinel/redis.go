@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -93,11 +92,9 @@ func New(pHost, pClient string, l logrus.FieldLogger) *Connector {
 }
 
 func (c *Connector) connect(conf, last map[string]string) {
-
-	fmt.Printf("\n\n=======\n%#v\n\n%#v\n\n", conf, last)
-
 	reset := c.reset(last)
 	config := c.config(conf)
+
 	if !reset && !config {
 		c.log.Debug("redis connector has same configuration")
 
@@ -108,7 +105,9 @@ func (c *Connector) connect(conf, last map[string]string) {
 		if err := c.DB.Close(); err != nil {
 			c.log.Error(err)
 		}
+
 		c.log.Debug("redis connection closed")
+
 		c.DB = &faker{}
 	}
 
@@ -133,6 +132,7 @@ func (c *Connector) config(conf map[string]string) bool {
 			if strings.HasPrefix(k, c.pHost) {
 				if len(c.opts.SentinelAddrs) == 0 {
 					needUpdate = true
+
 					c.opts.SentinelAddrs = append(c.opts.SentinelAddrs, v)
 				}
 
@@ -140,7 +140,9 @@ func (c *Connector) config(conf map[string]string) bool {
 					if a == v {
 						continue
 					}
+
 					needUpdate = true
+
 					c.opts.SentinelAddrs = append(c.opts.SentinelAddrs, v)
 				}
 			}

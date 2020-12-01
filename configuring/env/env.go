@@ -76,16 +76,26 @@ func Once(f ...daemon.WatcherConfigFunc) daemon.ConfigReader {
 }
 
 func (w *watcher) Read() error {
+	envKeys := []string{}
+
+	for _, v := range os.Environ() {
+		strs := strings.SplitN(v, "=", 2)
+		envKeys = append(envKeys, strs[0])
+	}
+
 	for _, fn := range w.f {
 		mapKeys := make(map[string]string)
 		wConf := fn()
 
 		for _, k := range wConf.Keys {
-			env := wConf.Prefix + "_" + wConf.MainKey + "_" + k
-			env = strings.ReplaceAll(env, "-", "_")
-			v, _ := Read(env)
-			if v != "" {
-				mapKeys[wConf.Prefix+k] = v
+			pre := strings.ToUpper(wConf.Prefix + "_" + wConf.MainKey + "_" + k)
+
+			for _, env := range hasPrefixEnv(envKeys, pre) {
+				v, _ := Read(env)
+				if v != "" {
+					e := strings.ToLower(strings.ReplaceAll(env, "_", "/"))
+					mapKeys[e] = v
+				}
 			}
 		}
 
@@ -93,4 +103,16 @@ func (w *watcher) Read() error {
 	}
 
 	return nil
+}
+
+func hasPrefixEnv(envkeys []string, prefix string) []string {
+	var ret []string
+
+	for _, v := range envkeys {
+		if strings.HasPrefix(v, prefix) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
 }

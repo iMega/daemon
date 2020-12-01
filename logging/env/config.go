@@ -20,9 +20,13 @@ import (
 )
 
 func ReadConfig() logger.Config {
+	ch, _ := env.Read("LOG_CHANNEL")
+	buildID, _ := env.Read("LOG_BUILD_ID")
 	level, _ := env.Read("LOG_LEVEL")
 
 	return logger.Config{
-		Level: level,
+		Channel: ch,
+		Level:   level,
+		BuildID: buildID,
 	}
 }

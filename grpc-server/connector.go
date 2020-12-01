@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Connector is a wrapped grpc server
+// Connector is a wrapped grpc server.
 type Connector struct {
 	prefixClient string
 
@@ -23,10 +23,9 @@ type Connector struct {
 	opts  *optionsServer
 	gOpts []grpc.ServerOption
 
-	srv   *grpc.Server
-	serve bool
-	rs    RegisterServices
-	lis   net.Listener
+	srv *grpc.Server
+	rs  RegisterServices
+	lis net.Listener
 
 	daemon.WatcherConfigFunc
 	daemon.ShutdownFunc
@@ -37,7 +36,6 @@ type optionsServer struct {
 }
 
 const (
-	configGRPC     = "/grpc" // consul prefixkey
 	configGRPCHost = "/grpc/host"
 )
 
@@ -72,7 +70,7 @@ func WithServerOptions(opts ...grpc.ServerOption) Option {
 	}
 }
 
-// New get a instance of grpc
+// New get a instance of grpc.
 func New(prefix string, opts ...Option) *Connector {
 	s := &Connector{
 		prefixClient: prefix,
@@ -92,7 +90,7 @@ func New(prefix string, opts ...Option) *Connector {
 		return daemon.WatcherConfig{
 			Prefix:    prefix,
 			MainKey:   "grpc",
-			Keys:      []string{""},
+			Keys:      []string{"host"},
 			ApplyFunc: s.connect,
 		}
 	}
@@ -104,6 +102,8 @@ func New(prefix string, opts ...Option) *Connector {
 	return s
 }
 
+var errRecovery = errors.New("recovery handler error")
+
 func (s *Connector) newServer() *grpc.Server {
 	var log *logrus.Entry
 	if e, ok := s.log.(*logrus.Entry); ok {
@@ -113,9 +113,8 @@ func (s *Connector) newServer() *grpc.Server {
 	rOpts := []grpc_recovery.Option{
 		grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 			stack := string(debug.Stack())
-			err = fmt.Errorf("recovery handler error: %s. Stack trace: %s", p, stack)
 
-			return
+			return fmt.Errorf("%w: %s: %s", errRecovery, p, stack)
 		}),
 	}
 
@@ -146,6 +145,7 @@ func (s *Connector) newServer() *grpc.Server {
 func (s *Connector) connect(conf, last map[string]string) {
 	reset := s.reset(last)
 	config := s.config(conf)
+
 	if !reset && !config {
 		s.log.Debug("grpc connector has same configuration")
 
@@ -179,6 +179,7 @@ func (s *Connector) connect(conf, last map[string]string) {
 
 	go func() {
 		s.log.Debugf("grpc connector start on %s", l.Addr().String())
+
 		if err := s.srv.Serve(l); err != nil {
 			if !errors.Is(err, grpc.ErrServerStopped) {
 				s.log.Error(err)
@@ -191,11 +192,9 @@ func (s *Connector) config(conf map[string]string) bool {
 	needUpdate := false
 
 	for k, v := range conf {
-		switch k {
-		case s.prefixClient + configGRPCHost:
+		if k == s.prefixClient+configGRPCHost {
 			needUpdate = needUpdate || s.opts.Host != v
 			s.opts.Host = v
-
 		}
 	}
 
@@ -206,8 +205,7 @@ func (s *Connector) reset(last map[string]string) bool {
 	needUpdate := false
 
 	for k := range last {
-		switch k {
-		case s.prefixClient + configGRPCHost:
+		if k == s.prefixClient+configGRPCHost {
 			needUpdate = true
 			s.opts.Host = "0.0.0.0:65535"
 		}

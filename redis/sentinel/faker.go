@@ -9,65 +9,65 @@ import (
 
 type faker struct{}
 
-// ErrFaker is a faker
-const ErrFaker = "it is a faker database"
+// ErrFaker is a faker.
+var ErrFaker = errors.New("it is a faker database")
 
 func fakeIntCmd() *redis.IntCmd {
-	return redis.NewIntResult(0, errors.New(ErrFaker))
+	return redis.NewIntResult(0, ErrFaker)
 }
 
 func fakeStringCmd() *redis.StringCmd {
-	return redis.NewStringResult("", errors.New(ErrFaker))
+	return redis.NewStringResult("", ErrFaker)
 }
 
 func fakeBoolCmd() *redis.BoolCmd {
-	return redis.NewBoolResult(false, errors.New(ErrFaker))
+	return redis.NewBoolResult(false, ErrFaker)
 }
 
 func fakeDurationCmd() *redis.DurationCmd {
-	return redis.NewDurationResult(0, errors.New(ErrFaker))
+	return redis.NewDurationResult(0, ErrFaker)
 }
 
 func fakeStatusCmd() *redis.StatusCmd {
-	return redis.NewStatusResult("", errors.New(ErrFaker))
+	return redis.NewStatusResult("", ErrFaker)
 }
 
 func fakeStringSliceCmd() *redis.StringSliceCmd {
-	return redis.NewStringSliceResult(nil, errors.New(ErrFaker))
+	return redis.NewStringSliceResult(nil, ErrFaker)
 }
 
 func fakeSliceCmd() *redis.SliceCmd {
-	return redis.NewSliceResult(nil, errors.New(ErrFaker))
+	return redis.NewSliceResult(nil, ErrFaker)
 }
 
 func fakeScanCmd() *redis.ScanCmd {
-	return redis.NewScanCmdResult(nil, 0, errors.New(ErrFaker))
+	return redis.NewScanCmdResult(nil, 0, ErrFaker)
 }
 
 func fakeFloatCmd() *redis.FloatCmd {
-	return redis.NewFloatResult(0, errors.New(ErrFaker))
+	return redis.NewFloatResult(0, ErrFaker)
 }
 
 func fakeCmdResult() *redis.Cmd {
-	return redis.NewCmdResult(nil, errors.New(ErrFaker))
+	return redis.NewCmdResult(nil, ErrFaker)
 }
 
 func fakeZSliceCmdResult() *redis.ZSliceCmd {
-	return redis.NewZSliceCmdResult(nil, errors.New(ErrFaker))
+	return redis.NewZSliceCmdResult(nil, ErrFaker)
 }
 
 func fakeGeoLocationCmdResult() *redis.GeoLocationCmd {
-	return redis.NewGeoLocationCmdResult(nil, errors.New(ErrFaker))
+	return redis.NewGeoLocationCmdResult(nil, ErrFaker)
 }
 
 // Release interface
 
 func (*faker) Watch(fn func(*redis.Tx) error, keys ...string) error {
-	return errors.New(ErrFaker)
+	return ErrFaker
 }
 
 func (*faker) Process(redis.Cmder) error {
-	return errors.New(ErrFaker)
+	return ErrFaker
 }
 
 func (*faker) WrapProcess(fn func(oldProcess func(redis.Cmder) error) func(redis.Cmder) error) {}
@@ -84,7 +84,7 @@ func (*faker) PSubscribe(channels ...string) *redis.PubSub {
 }
 
 func (*faker) Close() error {
-	return errors.New(ErrFaker)
+	return ErrFaker
 }
 
 func (*faker) Pipeline() redis.Pipeliner {
@@ -92,11 +92,11 @@ func (*faker) Pipeline() redis.Pipeliner {
 }
 
 func (*faker) Pipelined(fn func(redis.Pipeliner) error) ([]redis.Cmder, error) {
-	return nil, errors.New(ErrFaker)
+	return nil, ErrFaker
 }
 
 func (*faker) TxPipelined(fn func(redis.Pipeliner) error) ([]redis.Cmder, error) {
-	return nil, errors.New(ErrFaker)
+	return nil, ErrFaker
 }
 
 func (*faker) TxPipeline() redis.Pipeliner {
@@ -104,7 +104,7 @@ func (*faker) TxPipeline() redis.Pipeliner {
 }
 
 func (*faker) Command() *redis.CommandsInfoCmd {
-	return redis.NewCommandsInfoCmdResult(nil, errors.New(ErrFaker))
+	return redis.NewCommandsInfoCmdResult(nil, ErrFaker)
 }
 
 func (*faker) ClientGetName() *redis.StringCmd {
@@ -360,7 +360,7 @@ func (*faker) HGet(key, field string) *redis.StringCmd {
 }
 
 func (*faker) HGetAll(key string) *redis.StringStringMapCmd {
-	return redis.NewStringStringMapResult(nil, errors.New(ErrFaker))
+	return redis.NewStringStringMapResult(nil, ErrFaker)
 }
 
 func (*faker) HIncrBy(key, field string, incr int64) *redis.IntCmd {
@@ -508,7 +508,7 @@ func (*faker) SMembers(key string) *redis.StringSliceCmd {
 }
 
 func (*faker) SMembersMap(key string) *redis.StringStructMapCmd {
-	// TODO: not implement redis.NewStringStructMapResult in tests
+	// not implement redis.NewStringStructMapResult in tests
 	return nil
 }
 
@@ -557,32 +557,32 @@ func (*faker) XLen(stream string) *redis.IntCmd {
 }
 
 func (*faker) XRange(stream, start, stop string) *redis.XMessageSliceCmd {
-	// TODO: not implement redis.NewXMessageSliceResult in tests
+	// not implement redis.NewXMessageSliceResult in tests
 	return nil
 }
 
 func (*faker) XRangeN(stream, start, stop string, count int64) *redis.XMessageSliceCmd {
-	// TODO: not implement redis.NewXMessageSliceResult in tests
+	// not implement redis.NewXMessageSliceResult in tests
 	return nil
 }
 
 func (*faker) XRevRange(stream string, start, stop string) *redis.XMessageSliceCmd {
-	// TODO: not implement redis.NewXMessageSliceResult in tests
+	// not implement redis.NewXMessageSliceResult in tests
 	return nil
 }
 
 func (*faker) XRevRangeN(stream string, start, stop string, count int64) *redis.XMessageSliceCmd {
-	// TODO: not implement redis.NewXMessageSliceResult in tests
+	// not implement redis.NewXMessageSliceResult in tests
 	return nil
 }
 
 func (*faker) XRead(a *redis.XReadArgs) *redis.XStreamSliceCmd {
-	// TODO: not implement redis.NewXStreamSliceResult in tests
+	// not implement redis.NewXStreamSliceResult in tests
 	return nil
 }
 
 func (*faker) XReadStreams(streams ...string) *redis.XStreamSliceCmd {
-	// TODO: not implement redis.NewXStreamSliceResult in tests
+	// not implement redis.NewXStreamSliceResult in tests
 	return nil
 }
 
@@ -607,7 +607,7 @@ func (*faker) XGroupDelConsumer(stream, group, consumer string) *redis.IntCmd {
 }
 
 func (*faker) XReadGroup(a *redis.XReadGroupArgs) *redis.XStreamSliceCmd {
-	// TODO: not implement redis.NewXStreamSliceResult in tests
+	// not implement redis.NewXStreamSliceResult in tests
 	return nil
 }
 
@@ -616,17 +616,17 @@ func (*faker) XAck(stream, group string, ids ...string) *redis.IntCmd {
 }
 
 func (*faker) XPending(stream, group string) *redis.XPendingCmd {
-	// TODO: not implement redis.NewXPendingResult in tests
+	// not implement redis.NewXPendingResult in tests
 	return nil
 }
 
 func (*faker) XPendingExt(a *redis.XPendingExtArgs) *redis.XPendingExtCmd {
-	// TODO: not implement redis.NewXPendingExtResult in tests
+	// not implement redis.NewXPendingExtResult in tests
 	return nil
 }
 
 func (*faker) XClaim(a *redis.XClaimArgs) *redis.XMessageSliceCmd {
-	// TODO: not implement redis.NewXMessageSliceResult in tests
+	// not implement redis.NewXMessageSliceResult in tests
 	return nil
 }
 
@@ -643,12 +643,12 @@ func (*faker) XTrimApprox(key string, maxLen int64) *redis.IntCmd {
 }
 
 func (*faker) BZPopMax(timeout time.Duration, keys ...string) *redis.ZWithKeyCmd {
-	// TODO: not implement redis.NewZWithKeyResult in tests
+	// not implement redis.NewZWithKeyResult in tests
 	return nil
 }
 
 func (*faker) BZPopMin(timeout time.Duration, keys ...string) *redis.ZWithKeyCmd {
-	// TODO: not implement redis.NewZWithKeyResult in tests
+	// not implement redis.NewZWithKeyResult in tests
 	return nil
 }
 
@@ -893,7 +893,7 @@ func (*faker) SlaveOf(host, port string) *redis.StatusCmd {
 }
 
 func (*faker) Time() *redis.TimeCmd {
-	// TODO: not implement redis.NewTimeResult in tests
+	// not implement redis.NewTimeResult in tests
 	return nil
 }
 
@@ -906,7 +906,7 @@ func (*faker) EvalSha(sha1 string, keys []string, args ...interface{}) *redis.Cm
 }
 
 func (*faker) ScriptExists(hashes ...string) *redis.BoolSliceCmd {
-	return redis.NewBoolSliceResult(nil, errors.New(ErrFaker))
+	return redis.NewBoolSliceResult(nil, ErrFaker)
 }
 
 func (*faker) ScriptFlush() *redis.StatusCmd {
@@ -934,7 +934,7 @@ func (*faker) PubSubChannels(pattern string) *redis.StringSliceCmd {
 }
 
 func (*faker) PubSubNumSub(channels ...string) *redis.StringIntMapCmd {
-	return redis.NewStringIntMapCmdResult(nil, errors.New(ErrFaker))
+	return redis.NewStringIntMapCmdResult(nil, ErrFaker)
 }
 
 func (*faker) PubSubNumPat() *redis.IntCmd {
@@ -942,7 +942,7 @@ func (*faker) PubSubNumPat() *redis.IntCmd {
 }
 
 func (*faker) ClusterSlots() *redis.ClusterSlotsCmd {
-	return redis.NewClusterSlotsCmdResult(nil, errors.New(ErrFaker))
+	return redis.NewClusterSlotsCmdResult(nil, ErrFaker)
 }
 
 func (*faker) ClusterNodes() *redis.StringCmd {
@@ -1022,7 +1022,7 @@ func (*faker) GeoAdd(key string, geoLocation ...*redis.GeoLocation) *redis.IntCm
 }
 
 func (*faker) GeoPos(key string, members ...string) *redis.GeoPosCmd {
-	// TODO: not implement redis.NewGeoPosResult in tests
+	// not implement redis.NewGeoPosResult in tests
 	return nil
 }
 

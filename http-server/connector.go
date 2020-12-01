@@ -39,6 +39,7 @@ type Connector struct {
 	daemon.ShutdownFunc
 }
 
+// Config of connector.
 type Config struct {
 	Addr              string
 	ReadTimeout       time.Duration
@@ -115,6 +116,7 @@ func (c *Connector) newServer() *http.Server {
 func (c *Connector) connect(conf, last map[string]string) {
 	reset := c.reset(last)
 	config := c.config(conf)
+
 	if !reset && !config {
 		c.log.Debug("http connector has same configuration")
 
@@ -123,9 +125,11 @@ func (c *Connector) connect(conf, last map[string]string) {
 
 	if c.srv != nil {
 		c.log.Debugf("http connector start shutdown, %s", c.conf.Addr)
+
 		if err := c.srv.Shutdown(context.Background()); err != nil {
 			c.log.Error(err)
 		}
+
 		c.log.Debugf("http connector end shutdown")
 		c.srv = nil
 	}
@@ -134,6 +138,7 @@ func (c *Connector) connect(conf, last map[string]string) {
 
 	go func() {
 		c.log.Debugf("http connector start on %s", c.conf.Addr)
+
 		if err := c.srv.ListenAndServe(); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
 				c.log.Error(err)
@@ -197,24 +202,23 @@ func (c *Connector) reset(last map[string]string) bool {
 
 		case c.prefix + "/http-server/read-timeout":
 			needUpdate = true
-			c.conf.ReadTimeout = 2 * time.Second
+			c.conf.ReadTimeout = defaultTimeout
 
 		case c.prefix + "/http-server/read-header-timeout":
 			needUpdate = true
-			c.conf.ReadHeaderTimeout = 2 * time.Second
+			c.conf.ReadHeaderTimeout = defaultTimeout
 
 		case c.prefix + "/http-server/write-timeout":
 			needUpdate = true
-			c.conf.WriteTimeout = 2 * time.Second
+			c.conf.WriteTimeout = defaultTimeout
 
 		case c.prefix + "/http-server/idle-timeout":
 			needUpdate = true
-			c.conf.IdleTimeout = 2 * time.Second
+			c.conf.IdleTimeout = defaultTimeout
 
 		case c.prefix + "/http-server/max-header-bytes":
 			needUpdate = true
 			c.conf.MaxHeaderBytes = http.DefaultMaxHeaderBytes
-
 		}
 	}
 
