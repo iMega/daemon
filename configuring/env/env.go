@@ -88,7 +88,11 @@ func (w *watcher) Read() error {
 		wConf := fn()
 
 		for _, k := range wConf.Keys {
-			pre := strings.ToUpper(wConf.Prefix + "_" + wConf.MainKey + "_" + k)
+			p := strings.ReplaceAll(wConf.Prefix, "-", "_")
+			m := strings.ReplaceAll(wConf.MainKey, "-", "_")
+			pre := strings.ToUpper(
+				p + "_" + m + "_" + strings.ReplaceAll(k, "-", "_"),
+			)
 
 			for _, env := range hasPrefixEnv(envKeys, pre) {
 				v, _ := Read(env)
