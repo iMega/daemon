@@ -68,7 +68,7 @@ func New(prefix string, l logrus.FieldLogger, handler http.Handler) *Connector {
 		return daemon.WatcherConfig{
 			Prefix:    prefix,
 			MainKey:   "http-server",
-			Keys:      []string{""},
+			Keys:      keys(),
 			ApplyFunc: c.connect,
 		}
 	}
@@ -145,6 +145,17 @@ func (c *Connector) connect(conf, last map[string]string) {
 			}
 		}
 	}()
+}
+
+func keys() []string {
+	return []string{
+		"host",
+		"read-timeout",
+		"read-header-timeout",
+		"write-timeout",
+		"idle-timeout",
+		"max-header-bytes",
+	}
 }
 
 func (c *Connector) config(conf map[string]string) bool {
