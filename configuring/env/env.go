@@ -88,16 +88,13 @@ func (w *watcher) Read() error {
 		wConf := fn()
 
 		for _, k := range wConf.Keys {
-			p := strings.ReplaceAll(wConf.Prefix, "-", "_")
-			m := strings.ReplaceAll(wConf.MainKey, "-", "_")
-			pre := strings.ToUpper(
-				p + "_" + m + "_" + strings.ReplaceAll(k, "-", "_"),
-			)
+			pre := strings.ReplaceAll(wConf.Prefix+"_"+wConf.MainKey+"_"+k, "-", "_")
+			pre = strings.ToUpper(strings.ReplaceAll(pre, "/", "_"))
 
-			for _, env := range hasPrefixEnv(envKeys, pre) {
+			if env, ok := hasEnv(envKeys, pre); ok {
 				v, _ := Read(env)
 				if v != "" {
-					e := strings.ToLower(strings.ReplaceAll(env, "_", "/"))
+					e := wConf.Prefix + "/" + wConf.MainKey + "/" + k
 					mapKeys[e] = v
 				}
 			}
@@ -109,14 +106,12 @@ func (w *watcher) Read() error {
 	return nil
 }
 
-func hasPrefixEnv(envkeys []string, prefix string) []string {
-	var ret []string
-
+func hasEnv(envkeys []string, val string) (string, bool) {
 	for _, v := range envkeys {
-		if strings.HasPrefix(v, prefix) {
-			ret = append(ret, v)
+		if v == val {
+			return v, true
 		}
 	}
 
-	return ret
+	return "", false
 }
