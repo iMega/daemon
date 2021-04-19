@@ -35,6 +35,7 @@ type Connector struct {
 	log     logrus.FieldLogger
 	prefix  string
 	handler http.Handler
+	options []http_logrus.Option
 	daemon.WatcherConfigFunc
 	daemon.ShutdownFunc
 }
@@ -51,17 +52,40 @@ type Config struct {
 
 const defaultTimeout = 2 * time.Second
 
+type Option func(*Connector)
+
+func WithLogger(l logrus.FieldLogger) Option {
+	return func(c *Connector) {
+		c.log = l
+	}
+}
+
+func WithHandler(o http.Handler) Option {
+	return func(c *Connector) {
+		c.handler = o
+	}
+}
+
+func WithLogrusOptions(o ...http_logrus.Option) Option {
+	return func(c *Connector) {
+		c.options = o
+	}
+}
+
 // New get a instance of http server.
-func New(prefix string, l logrus.FieldLogger, handler http.Handler) *Connector {
+func New(prefix string, opts ...Option) *Connector {
 	c := &Connector{
-		log: l,
 		conf: &Config{
 			Addr:         "0.0.0.0:65534",
 			ReadTimeout:  defaultTimeout,
 			WriteTimeout: defaultTimeout,
 		},
-		handler: handler,
 		prefix:  prefix,
+		options: []http_logrus.Option{},
+	}
+
+	for _, opt := range opts {
+		opt(c)
 	}
 
 	c.WatcherConfigFunc = func() daemon.WatcherConfig {
@@ -99,6 +123,7 @@ func (c *Connector) newServer() *http.Server {
 			},
 		),
 	}
+	opts = append(opts, c.options...)
 
 	return &http.Server{
 		Addr: c.conf.Addr,

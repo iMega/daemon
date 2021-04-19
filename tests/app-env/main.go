@@ -45,7 +45,11 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handler)
-	h := httpserver.New("myhttp", log, mux)
+	h := httpserver.New(
+		"myhttp",
+		httpserver.WithLogger(log),
+		httpserver.WithHandler(mux),
+	)
 
 	cr := env.Once(
 		g.WatcherConfigFunc,
