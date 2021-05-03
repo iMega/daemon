@@ -37,6 +37,7 @@ type daemon struct {
 type Daemon interface {
 	Run(shutdownTimeout time.Duration) error
 	RegisterShutdownFunc(f ...ShutdownFunc)
+	RegisterHealthCheckFunc(f HealthCheckFunc)
 }
 
 // New create a new Daemon.
