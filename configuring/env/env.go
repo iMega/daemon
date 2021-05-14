@@ -23,6 +23,8 @@ import (
 	"github.com/imega/daemon"
 )
 
+const suffix = "_FILE"
+
 // Read retrieves the value of the environment variable named by the key.
 // As an alternative to passing sensitive information via environment variables,
 // _FILE may be appended to the previously listed environment variables,
@@ -54,7 +56,7 @@ import (
 // passwd, _ := env.Read("PASSWORD") // reading from PASSWORD_FILE
 // login, _ := end.Read("LOGIN")     // reading from LOGIN.
 func Read(key string) (string, error) {
-	if filename := os.Getenv(key + "_FILE"); filename != "" {
+	if filename := os.Getenv(key + suffix); filename != "" {
 		value, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return "", fmt.Errorf("failed to read file %s: %w", filename, err)
@@ -80,6 +82,11 @@ func (w *watcher) Read() error {
 
 	for _, v := range os.Environ() {
 		strs := strings.SplitN(v, "=", 2)
+		if strings.HasSuffix(strs[0], suffix) {
+			envKeys = append(envKeys, strs[0][0:len(strs[0])-len(suffix)])
+
+			continue
+		}
 		envKeys = append(envKeys, strs[0])
 	}
 
