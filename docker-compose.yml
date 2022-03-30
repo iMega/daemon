@@ -28,50 +28,51 @@ services:
     environment:
       - CLIENT_GRPC_HOST=0.0.0.0:9000
       - TESTCLIENT_GRPC_HOST=0.0.0.0:9001
+      - MYHTTP_HTTP_SERVER_HOST=0.0.0.0:80
       - INSTANCE_MYSQL_HOST=mysql1:3306
       - CLIENT_MYSQL_USER=root
       - CLIENT_MYSQL_PASSWORD=qwerty
-      - INSTANCE_REDIS-SENTINEL_HOST_INSTANCE-0=sentinel0:26379
-      - INSTANCE_REDIS-SENTINEL_HOST_INSTANCE-1=sentinel1:26379
-      - RCLIENT_REDIS-SENTINEL_MASTER-NAME=rediska
+      - INSTANCE_REDIS_SENTINEL_HOST_INSTANCE_0=sentinel0:26379
+      - INSTANCE_REDIS_SENTINEL_HOST_INSTANCE_1=sentinel1:26379
+      - RCLIENT_REDIS_SENTINEL_MASTER_NAME=rediska
 
   consul:
     image: imega/consul
     volumes:
-      - ./tests/fixtures:/data
+      - ./tests/consul:/data
     ports:
       - 8500:8500
 
   mysql1:
-    image: mysql:5.7.19
+    image: mariadb
     environment:
-      - MYSQL_ROOT_PASSWORD=qwerty
+      - MARIADB_ROOT_PASSWORD=qwerty
     volumes:
-      - ./tests/fixtures/mysql1.sql:/docker-entrypoint-initdb.d/0.sql
+      - ./tests/mysql/mysql1.sql:/docker-entrypoint-initdb.d/0.sql
 
   mysql2:
-    image: mysql:5.7.19
+    image: mariadb
     environment:
-      - MYSQL_ROOT_PASSWORD=qwerty
+      - MARIADB_ROOT_PASSWORD=qwerty
     volumes:
-      - ./tests/fixtures/mysql2.sql:/docker-entrypoint-initdb.d/0.sql
+      - ./tests/mysql/mysql2.sql:/docker-entrypoint-initdb.d/0.sql
 
   redis0:
-    image: redis:2.8.20
+    image: redis:6.0-alpine3.15
     command: redis-server --appendonly yes --port 6379
 
   sentinel0:
-    image: redis:2.8.20
+    image: redis:6.0-alpine3.15
     volumes:
       - ./tests/sentinel0.conf:/sentinel.conf
     command: ["redis-sentinel", "/sentinel.conf"]
 
   redis1:
-    image: redis:2.8.20
+    image: redis:6.0-alpine3.15
     command: redis-server --appendonly yes --port 16379
 
   sentinel1:
-    image: redis:2.8.20
+    image: redis:6.0-alpine3.15
     volumes:
       - ./tests/sentinel1.conf:/sentinel.conf
     command: ["redis-sentinel", "/sentinel.conf"]

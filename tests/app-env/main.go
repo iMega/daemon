@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/imega/daemon/logging"
 	"github.com/imega/daemon/mysql"
 	redis "github.com/imega/daemon/redis/sentinel"
-	"github.com/improbable-eng/go-httpwares/logging/logrus/ctxlogrus"
 	"google.golang.org/grpc"
 )
 
@@ -38,9 +36,7 @@ func main() {
 	g1 := grpcserver.New(
 		"testclient",
 		grpcserver.WithLogger(log),
-		grpcserver.WithServices(func(s *grpc.Server) {
-			health.New(s)
-		}),
+		grpcserver.WithServices(func(s *grpc.Server) { health.New(s) }),
 	)
 
 	mux := http.NewServeMux()
@@ -66,33 +62,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	muxTest := http.NewServeMux()
-	muxTest.Handle(
-		"/test_mysql_reconnect_between_instances",
-		testMysqlReconnectBetweenInstances(m),
-	)
-	muxTest.Handle(
-		"/test_redis_reconnect_between_instances",
-		testRedisReconnectBetweenInstances(r),
-	)
-
-	srvTest := &http.Server{
-		Addr:    "0.0.0.0:80",
-		Handler: muxTest,
-	}
-
-	go func() {
-		if err := srvTest.ListenAndServe(); err != nil {
-			log.Fatalf("failed to serve, %s", err)
-		}
-	}()
-
-	d.RegisterShutdownFunc(func() {
-		if err := srvTest.Shutdown(context.Background()); err != nil {
-			log.Error(err)
-		}
-	})
-
 	log.Info("daemon is started")
 
 	if err := d.Run(shutdownTimeout); err != nil {
@@ -104,36 +73,4 @@ func main() {
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
-}
-
-func testMysqlReconnectBetweenInstances(c *mysql.Connector) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var (
-			log   = ctxlogrus.Extract(r.Context())
-			title []byte
-		)
-
-		if err := c.DB.QueryRow("select title from test.test").Scan(&title); err != nil {
-			log.Error(err)
-		}
-
-		if _, err := w.Write(title); err != nil {
-			log.Error(err)
-		}
-	})
-}
-
-func testRedisReconnectBetweenInstances(c *redis.Connector) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log := ctxlogrus.Extract(r.Context())
-
-		res, err := c.DB.Info("server").Bytes()
-		if err != nil {
-			log.Error(err)
-		}
-
-		if _, err := w.Write(res); err != nil {
-			log.Error(err)
-		}
-	})
 }

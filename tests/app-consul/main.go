@@ -33,7 +33,8 @@ func main() {
 		grpcserver.WithLogger(log),
 		grpcserver.WithServices(func(s *grpc.Server) {
 			health.New(s, m.HealthCheckFunc, r.HealthCheckFunc)
-		}))
+		}),
+	)
 
 	g1 := grpcserver.New(
 		"testclient",

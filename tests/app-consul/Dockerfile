@@ -2,8 +2,8 @@ ARG GO_IMG
 
 FROM $GO_IMG
 ARG CWD
-ARG GRPCURL_VERSION=v1.7.0
-ENV GOFLAGS=
+ARG GRPCURL_VERSION=v1.8.6
+ENV GOFLAGS=-mod=mod
 ENV LOG_LEVEL=debug
 
 RUN apk add --update git ca-certificates && \

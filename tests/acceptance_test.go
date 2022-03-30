@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,12 +15,28 @@ import (
 )
 
 var _ = BeforeSuite(func() {
-	err := WaitForSystemUnderTestReady()
-	Expect(err).NotTo(HaveOccurred())
+	var errConsul, errEnv error
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		errConsul = WaitingForSystemUnderTestBeReady("appconsul:9000")
+	}()
+
+	go func() {
+		defer wg.Done()
+		errEnv = WaitingForSystemUnderTestBeReady("appenv:9000")
+	}()
+
+	wg.Wait()
+
+	Expect(errConsul).NotTo(HaveOccurred())
+	Expect(errEnv).NotTo(HaveOccurred())
 })
 
-func WaitForSystemUnderTestReady() error {
-	cc, err := grpc.Dial("appconsul:9000", grpc.WithInsecure())
+func WaitingForSystemUnderTestBeReady(host string) error {
+	cc, err := grpc.Dial(host, grpc.WithInsecure())
 	if err != nil {
 		return err
 	}

@@ -82,3 +82,30 @@ var _ = Describe("reconnect grpc-server", func() {
 		})
 	})
 })
+
+var _ = Describe("appenv connect grpc-server", func() {
+	It("port 9001 is listen", func() {
+		actual := grpc_health_v1.HealthCheckResponse_UNKNOWN
+
+		cc, err := grpc.Dial("appenv:9001", grpc.WithInsecure())
+		Expect(err).NotTo(HaveOccurred())
+
+		hc := grpc_health_v1.NewHealthClient(cc)
+		for attempts := 30; attempts > 0; attempts-- {
+
+			resp, _ := hc.Check(
+				context.Background(),
+				&grpc_health_v1.HealthCheckRequest{},
+			)
+
+			if resp.GetStatus() == grpc_health_v1.HealthCheckResponse_SERVING {
+				actual = resp.GetStatus()
+				break
+			}
+
+			<-time.After(1 * time.Second)
+		}
+
+		Expect(actual).To(Equal(grpc_health_v1.HealthCheckResponse_SERVING))
+	})
+})

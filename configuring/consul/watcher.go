@@ -16,6 +16,7 @@ package consul
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/api/watch"
@@ -24,17 +25,19 @@ import (
 )
 
 type watcher struct {
-	log      logrus.FieldLogger
-	wathFunc []daemon.WatcherConfigFunc
-	LastConf map[string]map[string]string
+	log           logrus.FieldLogger
+	wathFunc      []daemon.WatcherConfigFunc
+	LastConfMutex sync.RWMutex
+	LastConf      map[string]map[string]string
 }
 
 // Watch .
 func Watch(log logrus.FieldLogger, f ...daemon.WatcherConfigFunc) daemon.ConfigReader {
 	return &watcher{
-		log:      log,
-		wathFunc: f,
-		LastConf: make(map[string]map[string]string),
+		log:           log,
+		wathFunc:      f,
+		LastConfMutex: sync.RWMutex{},
+		LastConf:      make(map[string]map[string]string),
 	}
 }
 
@@ -71,9 +74,13 @@ func (w *watcher) Read() error {
 					return
 				}
 
+				w.LastConfMutex.RLock()
 				cb(m, keys4reset(m, w.LastConf[k]))
+				w.LastConfMutex.RUnlock()
 
+				w.LastConfMutex.Lock()
 				w.LastConf[k] = m
+				w.LastConfMutex.Unlock()
 			}
 		}(plan, wConf.ApplyFunc, k)
 

@@ -104,6 +104,15 @@ func (w *watcher) Read() error {
 					e := wConf.Prefix + "/" + wConf.MainKey + "/" + k
 					mapKeys[e] = v
 				}
+			} else {
+				if env, ok := hasPrefixEnv(envKeys, pre); ok {
+					v, _ := Read(env)
+					if v != "" {
+						e := wConf.Prefix + "/" + wConf.MainKey + "/" + k
+						suffix := "/" + strings.ToLower(env[len(e)+1:])
+						mapKeys[e+suffix] = v
+					}
+				}
 			}
 		}
 
@@ -116,6 +125,16 @@ func (w *watcher) Read() error {
 func hasEnv(envkeys []string, val string) (string, bool) {
 	for _, v := range envkeys {
 		if v == val {
+			return v, true
+		}
+	}
+
+	return "", false
+}
+
+func hasPrefixEnv(envkeys []string, val string) (string, bool) {
+	for _, v := range envkeys {
+		if strings.HasPrefix(v, val) {
 			return v, true
 		}
 	}

@@ -67,3 +67,23 @@ var _ = Describe("reconnect http-server", func() {
 		})
 	})
 })
+
+var _ = Describe("appenv connect http-server", func() {
+	It("port 80 is listen", func() {
+		expected := []byte("ok")
+		actual := []byte("")
+
+		for attempts := 30; attempts > 0; attempts-- {
+			b, _ := helper.Request("http://appenv:80")
+
+			if bytes.Compare(b, expected) == 0 {
+				actual = b
+				break
+			}
+
+			<-time.After(1 * time.Second)
+		}
+
+		Expect(actual).To(Equal(expected))
+	})
+})

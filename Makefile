@@ -1,6 +1,6 @@
 REPO = github.com/imega/daemon
 CWD = /go/src/$(REPO)
-GO_IMG = golang:1.15.8-alpine3.13
+GO_IMG = golang:1.17.8-alpine3.15
 
 test: lint unit acceptance
 
