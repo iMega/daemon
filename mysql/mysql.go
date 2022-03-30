@@ -34,7 +34,7 @@ const maxIdleConns = 2
 
 // New get a instance of mysql.
 func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
-	db := &Connector{
+	conn := &Connector{
 		log: l,
 
 		pxHost:   prefixHost + "/mysql/host",
@@ -45,13 +45,13 @@ func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
 		maxIdleConns: maxIdleConns,
 	}
 
-	db.WatcherConfigFuncs = []daemon.WatcherConfigFunc{
+	conn.WatcherConfigFuncs = []daemon.WatcherConfigFunc{
 		daemon.WatcherConfigFunc(func() daemon.WatcherConfig {
 			return daemon.WatcherConfig{
 				Prefix:    prefixHost,
 				MainKey:   "mysql",
 				Keys:      []string{"host"},
-				ApplyFunc: db.connect,
+				ApplyFunc: conn.connect,
 			}
 		}),
 		daemon.WatcherConfigFunc(func() daemon.WatcherConfig {
@@ -59,44 +59,44 @@ func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
 				Prefix:    prefixClient,
 				MainKey:   "mysql",
 				Keys:      clientConfig(),
-				ApplyFunc: db.connect,
+				ApplyFunc: conn.connect,
 			}
 		}),
 	}
 
-	db.HealthCheckFunc = func() bool {
-		if db.DB == nil {
-			db.log.Error("failed to ping mysql")
+	conn.HealthCheckFunc = func() bool {
+		if conn.DB == nil {
+			conn.log.Error("failed to ping mysql")
 
 			return false
 		}
 
-		if err := db.DB.Ping(); err != nil {
-			db.log.Errorf("failed to ping mysql, %s", err)
+		if err := conn.DB.Ping(); err != nil {
+			conn.log.Errorf("failed to ping mysql, %s", err)
 
 			return false
 		}
 
-		db.log.Debug("mysql ping is ok")
+		conn.log.Debug("mysql ping is ok")
 
 		return true
 	}
 
-	db.ShutdownFunc = func() {
-		if db.DB == nil {
-			db.log.Error("failed to close connection to mysql")
+	conn.ShutdownFunc = func() {
+		if conn.DB == nil {
+			conn.log.Error("failed to close connection to mysql")
 
 			return
 		}
 
-		if err := db.DB.Close(); err != nil {
-			db.log.Errorf("failed to close connection to mysql, %s", err)
+		if err := conn.DB.Close(); err != nil {
+			conn.log.Errorf("failed to close connection to mysql, %s", err)
 
 			return
 		}
 	}
 
-	return db
+	return conn
 }
 
 func (db *Connector) connect(conf, last map[string]string) {
@@ -301,152 +301,152 @@ const valueTrue = "true"
 func (db *Connector) config(conf map[string]string) bool {
 	needUpdate := false
 
-	for k, v := range conf {
-		switch k {
+	for key, value := range conf {
+		switch key {
 		case db.pxHost:
-			needUpdate = needUpdate || db.opts.Addr != v
-			db.opts.Addr = v
+			needUpdate = needUpdate || db.opts.Addr != value
+			db.opts.Addr = value
 
 		case db.pxClient + "/user":
-			needUpdate = needUpdate || db.opts.User != v
-			db.opts.User = v
+			needUpdate = needUpdate || db.opts.User != value
+			db.opts.User = value
 
 		case db.pxClient + "/password":
-			needUpdate = needUpdate || db.opts.Passwd != v
-			db.opts.Passwd = v
+			needUpdate = needUpdate || db.opts.Passwd != value
+			db.opts.Passwd = value
 
 		case db.pxClient + "/net":
-			needUpdate = needUpdate || db.opts.Net != v
-			db.opts.Net = v
+			needUpdate = needUpdate || db.opts.Net != value
+			db.opts.Net = value
 
 		case db.pxClient + "/db-name":
-			needUpdate = needUpdate || db.opts.DBName != v
-			db.opts.DBName = v
+			needUpdate = needUpdate || db.opts.DBName != value
+			db.opts.DBName = value
 
 		case db.pxClient + "/collation":
-			needUpdate = needUpdate || db.opts.Collation != v
-			db.opts.Collation = v
+			needUpdate = needUpdate || db.opts.Collation != value
+			db.opts.Collation = value
 
 		case db.pxClient + "/loc":
-			if loc, err := time.LoadLocation(v); err == nil {
+			if loc, err := time.LoadLocation(value); err == nil {
 				needUpdate = needUpdate || db.opts.Loc != loc
 				db.opts.Loc = loc
 			}
 
 		case db.pxClient + "/max-allowed-packet":
-			if i, err := strconv.Atoi(v); err == nil {
+			if i, err := strconv.Atoi(value); err == nil {
 				needUpdate = needUpdate || db.opts.MaxAllowedPacket != i
 				db.opts.MaxAllowedPacket = i
 			}
 
 		case db.pxClient + "/server-pub-key":
-			needUpdate = needUpdate || db.opts.ServerPubKey != v
-			db.opts.ServerPubKey = v
+			needUpdate = needUpdate || db.opts.ServerPubKey != value
+			db.opts.ServerPubKey = value
 
 		case db.pxClient + "/tls-config":
-			needUpdate = needUpdate || db.opts.TLSConfig != v
-			db.opts.TLSConfig = v
+			needUpdate = needUpdate || db.opts.TLSConfig != value
+			db.opts.TLSConfig = value
 
 		case db.pxClient + "/timeout":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || db.opts.Timeout != d
 				db.opts.Timeout = d
 			}
 
 		case db.pxClient + "/read-timeout":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || db.opts.ReadTimeout != d
 				db.opts.ReadTimeout = d
 			}
 
 		case db.pxClient + "/write-timeout":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || db.opts.WriteTimeout != d
 				db.opts.WriteTimeout = d
 			}
 
 		case db.pxClient + "/allow-all-files":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.AllowAllFiles != val
-			db.opts.AllowAllFiles = v == valueTrue
+			db.opts.AllowAllFiles = value == valueTrue
 
 		case db.pxClient + "/allow-cleartext-passwords":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.AllowCleartextPasswords != val
-			db.opts.AllowCleartextPasswords = v == valueTrue
+			db.opts.AllowCleartextPasswords = value == valueTrue
 
 		case db.pxClient + "/allow-native-passwords":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.AllowNativePasswords != val
-			db.opts.AllowNativePasswords = v == valueTrue
+			db.opts.AllowNativePasswords = value == valueTrue
 
 		case db.pxClient + "/allow-old-passwords":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.AllowOldPasswords != val
-			db.opts.AllowOldPasswords = v == valueTrue
+			db.opts.AllowOldPasswords = value == valueTrue
 
 		case db.pxClient + "/check-conn-liveness":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.CheckConnLiveness != val
-			db.opts.CheckConnLiveness = v == valueTrue
+			db.opts.CheckConnLiveness = value == valueTrue
 
 		case db.pxClient + "/client-found-rows":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.ClientFoundRows != val
-			db.opts.ClientFoundRows = v == valueTrue
+			db.opts.ClientFoundRows = value == valueTrue
 
 		case db.pxClient + "/columns-with-alias":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.ColumnsWithAlias != val
-			db.opts.ColumnsWithAlias = v == valueTrue
+			db.opts.ColumnsWithAlias = value == valueTrue
 
 		case db.pxClient + "/interpolate-params":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.InterpolateParams != val
-			db.opts.InterpolateParams = v == valueTrue
+			db.opts.InterpolateParams = value == valueTrue
 
 		case db.pxClient + "/multi-statements":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.MultiStatements != val
-			db.opts.MultiStatements = v == valueTrue
+			db.opts.MultiStatements = value == valueTrue
 
 		case db.pxClient + "/parse-time":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.ParseTime != val
 			db.opts.ParseTime = val
 
 		case db.pxClient + "/reject-read-only":
-			val := v == valueTrue
+			val := value == valueTrue
 			needUpdate = needUpdate || db.opts.RejectReadOnly != val
-			db.opts.RejectReadOnly = v == valueTrue
+			db.opts.RejectReadOnly = value == valueTrue
 
 		case db.pxClient + "/params":
 			m := map[string]string{}
-			if err := json.Unmarshal([]byte(v), &m); err == nil {
+			if err := json.Unmarshal([]byte(value), &m); err == nil {
 				needUpdate = needUpdate || !reflect.DeepEqual(db.opts.Params, m)
 				db.opts.Params = m
 			}
 
 		case db.pxClient + "/conn-max-idle-time":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || db.connMaxIdleTime != d
 				db.connMaxIdleTime = d
 			}
 
 		case db.pxClient + "/conn-max-lifetime":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || db.connMaxLifetime != d
 				db.connMaxLifetime = d
 			}
 
 		case db.pxClient + "/max-idle-conns":
-			if i, err := strconv.Atoi(v); err == nil {
+			if i, err := strconv.Atoi(value); err == nil {
 				needUpdate = needUpdate || db.maxIdleConns != i
 				db.maxIdleConns = i
 			}
 
 		case db.pxClient + "/max-open-conns":
-			if i, err := strconv.Atoi(v); err == nil {
+			if i, err := strconv.Atoi(value); err == nil {
 				needUpdate = needUpdate || db.maxOpenConns != i
 				db.maxOpenConns = i
 			}

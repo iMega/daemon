@@ -35,18 +35,18 @@ type health struct {
 // It returns status 204 if all healthcheckers returns true.
 // It returns status 503 (unhealthy) if anyone healthcheckers returns false.
 func Handler(opts ...Option) http.Handler {
-	h := &health{
+	handler := &health{
 		timeout: defaultTimeout * time.Second,
 	}
 
 	for _, opt := range opts {
-		opt(h)
+		opt(handler)
 	}
 
-	return h
+	return handler
 }
 
-// HandlerFunc returns an http.HandlerFunc
+// HandlerFunc returns an http.HandlerFunc.
 func HandlerFunc(opts ...Option) http.HandlerFunc {
 	return Handler(opts...).ServeHTTP
 }
@@ -69,47 +69,48 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-func (h *health) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *health) ServeHTTP(resp http.ResponseWriter, r *http.Request) {
 	ctx, cancel := r.Context(), func() {}
 	if h.timeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, h.timeout)
 	}
+
 	defer cancel()
 
 	statusCh := make(chan bool, len(h.hcf))
-	wg := sync.WaitGroup{}
+	wGroup := sync.WaitGroup{}
 
-	wg.Add(len(h.hcf))
+	wGroup.Add(len(h.hcf))
 
-	for k, f := range h.hcf {
-		go func(k int, f daemon.HealthCheckFunc) {
+	for _, f := range h.hcf {
+		go func(f daemon.HealthCheckFunc) {
 			statusCh <- f()
 
-			wg.Done()
-		}(k, f)
+			wGroup.Done()
+		}(f)
 	}
 
 	go func() {
-		wg.Wait()
+		wGroup.Wait()
 		close(statusCh)
 	}()
 
 	for {
 		select {
 		case <-ctx.Done():
-			http.Error(w, "unhealthy", http.StatusServiceUnavailable)
+			http.Error(resp, "unhealthy", http.StatusServiceUnavailable)
 
 			return
 
-		case r, ok := <-statusCh:
+		case status, ok := <-statusCh:
 			if !ok {
-				w.WriteHeader(http.StatusNoContent)
+				resp.WriteHeader(http.StatusNoContent)
 
 				return
 			}
 
-			if !r {
-				http.Error(w, "unhealthy", http.StatusServiceUnavailable)
+			if !status {
+				http.Error(resp, "unhealthy", http.StatusServiceUnavailable)
 
 				return
 			}

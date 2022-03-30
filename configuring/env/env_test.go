@@ -110,7 +110,7 @@ func Test_watcher_Read(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			w := &watcher{
+			w := &Watcher{
 				f: tt.fields.f,
 			}
 			if err := w.Read(); (err != nil) != tt.wantErr {

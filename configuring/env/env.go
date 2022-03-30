@@ -68,25 +68,28 @@ func Read(key string) (string, error) {
 	return os.Getenv(key), nil
 }
 
-type watcher struct {
+type Watcher struct {
 	f []daemon.WatcherConfigFunc
 }
 
 // Once .
-func Once(f ...daemon.WatcherConfigFunc) daemon.ConfigReader {
-	return &watcher{f}
+func Once(f ...daemon.WatcherConfigFunc) *Watcher {
+	return &Watcher{f}
 }
 
-func (w *watcher) Read() error {
+const secondEqual = 2
+
+func (w *Watcher) Read() error {
 	envKeys := []string{}
 
 	for _, v := range os.Environ() {
-		strs := strings.SplitN(v, "=", 2)
+		strs := strings.SplitN(v, "=", secondEqual)
 		if strings.HasSuffix(strs[0], suffix) {
 			envKeys = append(envKeys, strs[0][0:len(strs[0])-len(suffix)])
 
 			continue
 		}
+
 		envKeys = append(envKeys, strs[0])
 	}
 
@@ -94,21 +97,21 @@ func (w *watcher) Read() error {
 		mapKeys := make(map[string]string)
 		wConf := fn()
 
-		for _, k := range wConf.Keys {
-			pre := strings.ReplaceAll(wConf.Prefix+"_"+wConf.MainKey+"_"+k, "-", "_")
+		for _, key := range wConf.Keys {
+			pre := strings.ReplaceAll(wConf.Prefix+"_"+wConf.MainKey+"_"+key, "-", "_")
 			pre = strings.ToUpper(strings.ReplaceAll(pre, "/", "_"))
 
 			if env, ok := hasEnv(envKeys, pre); ok {
 				v, _ := Read(env)
 				if v != "" {
-					e := wConf.Prefix + "/" + wConf.MainKey + "/" + k
+					e := wConf.Prefix + "/" + wConf.MainKey + "/" + key
 					mapKeys[e] = v
 				}
 			} else {
 				if env, ok := hasPrefixEnv(envKeys, pre); ok {
 					v, _ := Read(env)
 					if v != "" {
-						e := wConf.Prefix + "/" + wConf.MainKey + "/" + k
+						e := wConf.Prefix + "/" + wConf.MainKey + "/" + key
 						suffix := "/" + strings.ToLower(env[len(e)+1:])
 						mapKeys[e+suffix] = v
 					}

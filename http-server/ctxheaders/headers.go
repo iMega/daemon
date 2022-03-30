@@ -40,20 +40,20 @@ import (
 //     ),
 // }.
 func Middleware(next http.Handler, opts ...Option) http.Handler {
-	o := evaluateOptions(opts)
+	options := evaluateOptions(opts)
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		var (
-			ctx  = r.Context()
-			tags = http_ctxtags.ExtractInbound(r)
+			ctx  = req.Context()
+			tags = http_ctxtags.ExtractInbound(req)
 		)
 
-		for k, v := range o.HeadersToContext {
-			val := r.Header.Get(k)
+		for k, v := range options.HeadersToContext {
+			val := req.Header.Get(k)
 			tags.Set(v, val)
 			ctx = context.WithValue(ctx, v, val) // nolint:golint,staticcheck
 		}
 
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(resp, req.WithContext(ctx))
 	})
 }

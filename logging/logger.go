@@ -26,7 +26,7 @@ type Config struct {
 }
 
 // New create a new logger.
-func New(conf Config) logrus.FieldLogger {
+func New(conf Config) *logrus.Entry {
 	if conf.Level == "" {
 		conf.Level = "error"
 	}

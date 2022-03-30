@@ -7,6 +7,8 @@ import (
 	"google.golang.org/grpc/grpclog"
 )
 
+const verbosityLevel = 99
+
 func newVerbosityLogger(log *logrus.Entry) {
 	if log == nil || log.Logger.Level != logrus.DebugLevel {
 		return
@@ -15,7 +17,7 @@ func newVerbosityLogger(log *logrus.Entry) {
 	vlog := &verbosityFormatLogger{log: log}
 
 	grpclog.SetLoggerV2(
-		grpclog.NewLoggerV2WithVerbosity(vlog, vlog, vlog, 99),
+		grpclog.NewLoggerV2WithVerbosity(vlog, vlog, vlog, verbosityLevel),
 	)
 }
 

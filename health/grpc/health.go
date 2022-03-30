@@ -17,14 +17,13 @@ package health
 import (
 	"github.com/imega/daemon"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
 // New registers a health-check server and its implementation
 // to the gRPC server. This must be called before invoking Serve.
-func New(s *grpc.Server, f ...daemon.HealthCheckFunc) {
+func New(s reflection.GRPCServer, f ...daemon.HealthCheckFunc) {
 	grpc_health_v1.RegisterHealthServer(s, &server{f})
 	reflection.Register(s)
 }

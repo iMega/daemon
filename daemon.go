@@ -42,7 +42,7 @@ type Daemon interface {
 
 // New create a new Daemon.
 func New(l logrus.FieldLogger, cr ConfigReader) (Daemon, error) {
-	d := &daemon{
+	app := &daemon{
 		Log: l,
 	}
 
@@ -50,7 +50,7 @@ func New(l logrus.FieldLogger, cr ConfigReader) (Daemon, error) {
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	return d, nil
+	return app, nil
 }
 
 // Run daemon.
@@ -75,21 +75,21 @@ var ErrShutdownTimeout = errors.New("shutdown timeout")
 
 func (d *daemon) shutdown(timeout time.Duration) error {
 	timer := time.NewTimer(timeout)
-	wg := sync.WaitGroup{}
+	wGroup := sync.WaitGroup{}
 
-	for _, f := range d.sf {
-		wg.Add(1)
+	for _, sdFunc := range d.sf {
+		wGroup.Add(1)
 
 		go func(f ShutdownFunc) {
-			defer wg.Done()
+			defer wGroup.Done()
 			f()
-		}(f)
+		}(sdFunc)
 	}
 
 	doneChan := make(chan struct{})
 
 	go func() {
-		wg.Wait()
+		wGroup.Wait()
 		doneChan <- struct{}{}
 	}()
 

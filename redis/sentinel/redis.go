@@ -131,6 +131,7 @@ func (c *Connector) config(conf map[string]string) bool {
 
 	if reconfigure {
 		hosts := map[string]struct{}{}
+
 		for k, v := range conf {
 			if !strings.HasPrefix(k, c.pHost) {
 				continue

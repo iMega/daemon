@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type watcher struct {
+type Watcher struct {
 	log           logrus.FieldLogger
 	wathFunc      []daemon.WatcherConfigFunc
 	LastConfMutex sync.RWMutex
@@ -32,8 +32,8 @@ type watcher struct {
 }
 
 // Watch .
-func Watch(log logrus.FieldLogger, f ...daemon.WatcherConfigFunc) daemon.ConfigReader {
-	return &watcher{
+func Watch(log logrus.FieldLogger, f ...daemon.WatcherConfigFunc) *Watcher {
+	return &Watcher{
 		log:           log,
 		wathFunc:      f,
 		LastConfMutex: sync.RWMutex{},
@@ -41,18 +41,18 @@ func Watch(log logrus.FieldLogger, f ...daemon.WatcherConfigFunc) daemon.ConfigR
 	}
 }
 
-func (w *watcher) Read() error {
+func (w *Watcher) Read() error {
 	hlog := newConsulLogger(w.log)
 	conf := api.DefaultConfigWithLogger(hlog)
 
 	for _, fn := range w.wathFunc {
 		wConf := fn()
 
-		k := wConf.Prefix + "/" + wConf.MainKey
+		prefixKey := wConf.Prefix + "/" + wConf.MainKey
 
 		plan, err := watch.Parse(map[string]interface{}{
 			"type":   "keyprefix",
-			"prefix": k,
+			"prefix": prefixKey,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to parse keys: %w", err)
@@ -60,29 +60,29 @@ func (w *watcher) Read() error {
 
 		plan.Logger = hlog
 
-		func(p *watch.Plan, cb daemon.ApplyConfigFunc, k string) {
+		func(p *watch.Plan, cbFunc daemon.ApplyConfigFunc, key string) {
 			p.HybridHandler = func(v watch.BlockingParamVal, i interface{}) {
-				m := make(map[string]string)
+				conf := make(map[string]string)
 
 				if pairs, ok := i.(api.KVPairs); ok {
 					for _, pair := range pairs {
-						m[pair.Key] = string(pair.Value)
+						conf[pair.Key] = string(pair.Value)
 					}
 				}
 
-				if len(m) == 0 {
+				if len(conf) == 0 {
 					return
 				}
 
 				w.LastConfMutex.RLock()
-				cb(m, keys4reset(m, w.LastConf[k]))
+				cbFunc(conf, keys4reset(conf, w.LastConf[key]))
 				w.LastConfMutex.RUnlock()
 
 				w.LastConfMutex.Lock()
-				w.LastConf[k] = m
+				w.LastConf[key] = conf
 				w.LastConfMutex.Unlock()
 			}
-		}(plan, wConf.ApplyFunc, k)
+		}(plan, wConf.ApplyFunc, prefixKey)
 
 		go func() {
 			if err := plan.RunWithConfig(conf.Address, conf); err != nil {

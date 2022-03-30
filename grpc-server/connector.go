@@ -46,13 +46,13 @@ type RegisterServices func(srv *grpc.Server)
 type Option func(*Connector)
 
 // WithLogger .
-func WithLogger(l logrus.FieldLogger) Option {
+func WithLogger(log logrus.FieldLogger) Option {
 	return func(o *Connector) {
-		if e, ok := l.(*logrus.Entry); ok {
+		if e, ok := log.(*logrus.Entry); ok {
 			newVerbosityLogger(e)
 		}
 
-		o.log = l
+		o.log = log
 	}
 }
 
@@ -72,7 +72,7 @@ func WithServerOptions(opts ...grpc.ServerOption) Option {
 
 // New get a instance of grpc.
 func New(prefix string, opts ...Option) *Connector {
-	s := &Connector{
+	conn := &Connector{
 		prefixClient: prefix,
 
 		opts: &optionsServer{
@@ -81,25 +81,25 @@ func New(prefix string, opts ...Option) *Connector {
 	}
 
 	for _, o := range opts {
-		o(s)
+		o(conn)
 	}
 
-	s.srv = s.newServer()
+	conn.srv = conn.newServer()
 
-	s.WatcherConfigFunc = func() daemon.WatcherConfig {
+	conn.WatcherConfigFunc = func() daemon.WatcherConfig {
 		return daemon.WatcherConfig{
 			Prefix:    prefix,
 			MainKey:   "grpc",
 			Keys:      []string{"host"},
-			ApplyFunc: s.connect,
+			ApplyFunc: conn.connect,
 		}
 	}
 
-	s.ShutdownFunc = func() {
-		s.srv.GracefulStop()
+	conn.ShutdownFunc = func() {
+		conn.srv.GracefulStop()
 	}
 
-	return s
+	return conn
 }
 
 var errRecovery = errors.New("recovery handler error")
@@ -160,7 +160,7 @@ func (s *Connector) connect(conf, last map[string]string) {
 		s.srv = s.newServer()
 	}
 
-	l, err := net.Listen("tcp", s.opts.Host)
+	listener, err := net.Listen("tcp", s.opts.Host)
 	if err != nil {
 		s.log.Errorf(
 			"failed to listen on the TCP network address %s, %s",
@@ -171,16 +171,16 @@ func (s *Connector) connect(conf, last map[string]string) {
 		return
 	}
 
-	s.lis = l
+	s.lis = listener
 
 	if s.rs != nil {
 		s.rs(s.srv)
 	}
 
 	go func() {
-		s.log.Debugf("grpc connector start on %s", l.Addr().String())
+		s.log.Debugf("grpc connector start on %s", listener.Addr().String())
 
-		if err := s.srv.Serve(l); err != nil {
+		if err := s.srv.Serve(listener); err != nil {
 			if !errors.Is(err, grpc.ErrServerStopped) {
 				s.log.Error(err)
 			}

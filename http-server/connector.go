@@ -74,7 +74,7 @@ func WithLogrusOptions(o ...http_logrus.Option) Option {
 
 // New get a instance of http server.
 func New(prefix string, opts ...Option) *Connector {
-	c := &Connector{
+	conn := &Connector{
 		conf: &Config{
 			Addr:         "0.0.0.0:65534",
 			ReadTimeout:  defaultTimeout,
@@ -85,29 +85,29 @@ func New(prefix string, opts ...Option) *Connector {
 	}
 
 	for _, opt := range opts {
-		opt(c)
+		opt(conn)
 	}
 
-	c.WatcherConfigFunc = func() daemon.WatcherConfig {
+	conn.WatcherConfigFunc = func() daemon.WatcherConfig {
 		return daemon.WatcherConfig{
 			Prefix:    prefix,
 			MainKey:   "http-server",
 			Keys:      keys(),
-			ApplyFunc: c.connect,
+			ApplyFunc: conn.connect,
 		}
 	}
 
-	c.ShutdownFunc = func() {
-		if c.srv == nil {
+	conn.ShutdownFunc = func() {
+		if conn.srv == nil {
 			return
 		}
 
-		if err := c.srv.Shutdown(context.Background()); err != nil {
-			c.log.Error(err)
+		if err := conn.srv.Shutdown(context.Background()); err != nil {
+			conn.log.Error(err)
 		}
 	}
 
-	return c
+	return conn
 }
 
 func (c *Connector) newServer() *http.Server {
@@ -186,38 +186,38 @@ func keys() []string {
 func (c *Connector) config(conf map[string]string) bool {
 	needUpdate := false
 
-	for k, v := range conf {
-		switch k {
+	for key, value := range conf {
+		switch key {
 		case c.prefix + "/http-server/host":
-			needUpdate = needUpdate || c.conf.Addr != v
-			c.conf.Addr = v
+			needUpdate = needUpdate || c.conf.Addr != value
+			c.conf.Addr = value
 
 		case c.prefix + "/http-server/read-timeout":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || c.conf.ReadTimeout != d
 				c.conf.ReadTimeout = d
 			}
 
 		case c.prefix + "/http-server/read-header-timeout":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || c.conf.ReadHeaderTimeout != d
 				c.conf.ReadHeaderTimeout = d
 			}
 
 		case c.prefix + "/http-server/write-timeout":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || c.conf.WriteTimeout != d
 				c.conf.WriteTimeout = d
 			}
 
 		case c.prefix + "/http-server/idle-timeout":
-			if d, err := time.ParseDuration(v); err == nil {
+			if d, err := time.ParseDuration(value); err == nil {
 				needUpdate = needUpdate || c.conf.IdleTimeout != d
 				c.conf.IdleTimeout = d
 			}
 
 		case c.prefix + "/http-server/max-header-bytes":
-			if i, err := strconv.Atoi(v); err == nil {
+			if i, err := strconv.Atoi(value); err == nil {
 				needUpdate = needUpdate || c.conf.MaxHeaderBytes != i
 				c.conf.MaxHeaderBytes = i
 			}
