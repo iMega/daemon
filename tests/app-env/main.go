@@ -9,7 +9,7 @@ import (
 	grpcserver "github.com/imega/daemon/grpc-server"
 	health "github.com/imega/daemon/health/grpc"
 	httpserver "github.com/imega/daemon/http-server"
-	"github.com/imega/daemon/logging"
+	"github.com/imega/daemon/logging/wraplogrus"
 	"github.com/imega/daemon/mysql"
 	redis "github.com/imega/daemon/redis/sentinel"
 	"google.golang.org/grpc"
@@ -18,7 +18,7 @@ import (
 const shutdownTimeout = 15 * time.Second
 
 func main() {
-	log := logging.New(logging.Config{
+	log := wraplogrus.New(wraplogrus.Config{
 		Channel: "ch",
 		Level:   "debug",
 	})

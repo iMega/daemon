@@ -16,15 +16,15 @@ package env
 
 import (
 	"github.com/imega/daemon/configuring/env"
-	logger "github.com/imega/daemon/logging"
+	"github.com/imega/daemon/logging"
 )
 
-func ReadConfig() logger.Config {
+func ReadConfig() logging.Config {
 	ch, _ := env.Read("LOG_CHANNEL")
 	buildID, _ := env.Read("LOG_BUILD_ID")
 	level, _ := env.Read("LOG_LEVEL")
 
-	return logger.Config{
+	return logging.Config{
 		Channel: ch,
 		Level:   level,
 		BuildID: buildID,

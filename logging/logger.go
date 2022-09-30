@@ -14,42 +14,47 @@
 
 package logging
 
-import "github.com/sirupsen/logrus"
+import "context"
+
+// Logger is an interface for logger.
+type Logger interface {
+	Infof(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+	Debugf(format string, args ...interface{})
+}
 
 // Config is a configuration logger.
 type Config struct {
-	Channel       string
-	BuildID       string
-	Level         string
-	TextFormatter *logrus.TextFormatter
-	JSONFormatter *logrus.JSONFormatter
+	Channel string
+	BuildID string
+	Level   string
 }
 
-// New create a new logger.
-func New(conf Config) *logrus.Entry {
-	if conf.Level == "" {
-		conf.Level = "error"
+func ContextWithLogger(ctx context.Context, log Logger) context.Context {
+	if _, ok := ctx.Value(key{}).(Logger); ok {
+		return ctx
 	}
 
-	logLevel, err := logrus.ParseLevel(conf.Level)
-	if err != nil {
-		logLevel = logrus.ErrorLevel
-	}
-
-	logrus.SetLevel(logLevel)
-
-	if conf.TextFormatter != nil {
-		logrus.SetFormatter(conf.TextFormatter)
-	}
-
-	if conf.JSONFormatter != nil {
-		logrus.SetFormatter(conf.JSONFormatter)
-	}
-
-	return logrus.WithFields(
-		logrus.Fields{
-			"channel":  conf.Channel,
-			"build_id": conf.BuildID,
-		},
-	)
+	return context.WithValue(ctx, key{}, log)
 }
+
+func GetLogger(ctx context.Context) Logger {
+	val, ok := ctx.Value(key{}).(Logger)
+	if !ok {
+		return &noopLog{}
+	}
+
+	return val
+}
+
+type key struct{}
+
+func GetNoopLog() Logger {
+	return &noopLog{}
+}
+
+type noopLog struct{}
+
+func (nl *noopLog) Infof(string, ...interface{})  {}
+func (nl *noopLog) Errorf(string, ...interface{}) {}
+func (nl *noopLog) Debugf(string, ...interface{}) {}

@@ -22,20 +22,17 @@ import (
 	"time"
 
 	"github.com/imega/daemon"
-	"github.com/improbable-eng/go-httpwares"
-	http_logrus "github.com/improbable-eng/go-httpwares/logging/logrus"
-	http_ctxtags "github.com/improbable-eng/go-httpwares/tags"
-	"github.com/sirupsen/logrus"
+	"github.com/imega/daemon/logging"
 )
 
 // Connector is a wrapped http server.
 type Connector struct {
 	srv     *http.Server
 	conf    *Config
-	log     logrus.FieldLogger
+	log     logging.Logger
 	prefix  string
 	handler http.Handler
-	options []http_logrus.Option
+
 	daemon.WatcherConfigFunc
 	daemon.ShutdownFunc
 }
@@ -54,7 +51,7 @@ const defaultTimeout = 2 * time.Second
 
 type Option func(*Connector)
 
-func WithLogger(l logrus.FieldLogger) Option {
+func WithLogger(l logging.Logger) Option {
 	return func(c *Connector) {
 		c.log = l
 	}
@@ -66,12 +63,6 @@ func WithHandler(o http.Handler) Option {
 	}
 }
 
-func WithLogrusOptions(o ...http_logrus.Option) Option {
-	return func(c *Connector) {
-		c.options = o
-	}
-}
-
 // New get a instance of http server.
 func New(prefix string, opts ...Option) *Connector {
 	conn := &Connector{
@@ -80,8 +71,8 @@ func New(prefix string, opts ...Option) *Connector {
 			ReadTimeout:  defaultTimeout,
 			WriteTimeout: defaultTimeout,
 		},
-		prefix:  prefix,
-		options: []http_logrus.Option{},
+		prefix: prefix,
+		log:    logging.GetNoopLog(),
 	}
 
 	for _, opt := range opts {
@@ -103,7 +94,7 @@ func New(prefix string, opts ...Option) *Connector {
 		}
 
 		if err := conn.srv.Shutdown(context.Background()); err != nil {
-			conn.log.Error(err)
+			conn.log.Errorf("%s", err)
 		}
 	}
 
@@ -111,25 +102,9 @@ func New(prefix string, opts ...Option) *Connector {
 }
 
 func (c *Connector) newServer() *http.Server {
-	var log *logrus.Entry
-	if e, ok := c.log.(*logrus.Entry); ok {
-		log = e
-	}
-
-	opts := []http_logrus.Option{
-		http_logrus.WithDecider(
-			func(w httpwares.WrappedResponseWriter, r *http.Request) bool {
-				return w.StatusCode() != http.StatusOK
-			},
-		),
-	}
-	opts = append(opts, c.options...)
-
 	return &http.Server{
-		Addr: c.conf.Addr,
-		Handler: http_ctxtags.Middleware("http")(
-			http_logrus.Middleware(log, opts...)(c.handler),
-		),
+		Addr:              c.conf.Addr,
+		Handler:           c.handler,
 		ReadTimeout:       c.conf.ReadTimeout,
 		ReadHeaderTimeout: c.conf.ReadHeaderTimeout,
 		WriteTimeout:      c.conf.WriteTimeout,
@@ -143,7 +118,7 @@ func (c *Connector) connect(conf, last map[string]string) {
 	config := c.config(conf)
 
 	if !reset && !config {
-		c.log.Debug("http connector has same configuration")
+		c.log.Debugf("http connector has same configuration")
 
 		return
 	}
@@ -152,7 +127,7 @@ func (c *Connector) connect(conf, last map[string]string) {
 		c.log.Debugf("http connector start shutdown, %s", c.conf.Addr)
 
 		if err := c.srv.Shutdown(context.Background()); err != nil {
-			c.log.Error(err)
+			c.log.Errorf("%s", err)
 		}
 
 		c.log.Debugf("http connector end shutdown")
@@ -166,7 +141,7 @@ func (c *Connector) connect(conf, last map[string]string) {
 
 		if err := c.srv.ListenAndServe(); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
-				c.log.Error(err)
+				c.log.Errorf("%s", err)
 			}
 		}
 	}()
