@@ -23,11 +23,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/imega/daemon/logging"
 )
 
 type daemon struct {
-	Log logrus.FieldLogger
+	Log logging.Logger
 
 	sf []ShutdownFunc
 	hf []HealthCheckFunc
@@ -41,7 +41,7 @@ type Daemon interface {
 }
 
 // New create a new Daemon.
-func New(l logrus.FieldLogger, cr ConfigReader) (Daemon, error) {
+func New(l logging.Logger, cr ConfigReader) (Daemon, error) {
 	app := &daemon{
 		Log: l,
 	}
