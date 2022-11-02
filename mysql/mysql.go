@@ -9,12 +9,12 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/imega/daemon"
-	"github.com/sirupsen/logrus"
+	"github.com/imega/daemon/logging"
 )
 
 // Connector is wrapper sql.DB.
 type Connector struct {
-	log logrus.FieldLogger
+	log logging.Logger
 
 	pxHost   string
 	pxClient string
@@ -33,9 +33,9 @@ type Connector struct {
 const maxIdleConns = 2
 
 // New get a instance of mysql.
-func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
+func New(prefixHost, prefixClient string, logger logging.Logger) *Connector {
 	conn := &Connector{
-		log: l,
+		log: logger,
 
 		pxHost:   prefixHost + "/mysql/host",
 		pxClient: prefixClient + "/mysql",
@@ -66,7 +66,7 @@ func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
 
 	conn.HealthCheckFunc = func() bool {
 		if conn.DB == nil {
-			conn.log.Error("failed to ping mysql")
+			conn.log.Errorf("failed to ping mysql")
 
 			return false
 		}
@@ -77,14 +77,14 @@ func New(prefixHost, prefixClient string, l logrus.FieldLogger) *Connector {
 			return false
 		}
 
-		conn.log.Debug("mysql ping is ok")
+		conn.log.Debugf("mysql ping is ok")
 
 		return true
 	}
 
 	conn.ShutdownFunc = func() {
 		if conn.DB == nil {
-			conn.log.Error("failed to close connection to mysql")
+			conn.log.Errorf("failed to close connection to mysql")
 
 			return
 		}
@@ -104,22 +104,22 @@ func (db *Connector) connect(conf, last map[string]string) {
 	config := db.config(conf)
 
 	if !reset && !config {
-		db.log.Debug("mysql connector has same configuration")
+		db.log.Debugf("mysql connector has same configuration")
 
 		return
 	}
 
 	conn, err := mysql.NewConnector(db.opts)
 	if err != nil {
-		db.log.Error(err)
+		db.log.Errorf("failed to get a new connector, %s", err)
 	}
 
 	if _, ok := db.DB.(*fakerDB); !ok {
 		if err := db.DB.Close(); err != nil {
-			db.log.Error(err)
+			db.log.Errorf("failed to close db, %s", err)
 		}
 
-		db.log.Debug("mysql connection closed")
+		db.log.Debugf("mysql connection closed")
 
 		db.DB = &fakerDB{}
 	}
@@ -132,7 +132,7 @@ func (db *Connector) connect(conf, last map[string]string) {
 	db.DB.SetMaxIdleConns(db.maxIdleConns)
 	db.DB.SetConnMaxIdleTime(db.connMaxIdleTime)
 
-	db.log.Debug("mysql connection open")
+	db.log.Debugf("mysql connection open")
 }
 
 func clientConfig() []string {
