@@ -1,6 +1,7 @@
 package wrapzerolog
 
 import (
+	"github.com/imega/daemon/logging"
 	"github.com/rs/zerolog"
 )
 
@@ -24,6 +25,6 @@ func (l *ZLog) Debugf(format string, args ...interface{}) {
 	l.wrapped.Debug().Msgf(format, args...)
 }
 
-func (l *ZLog) WithFields(fields map[string]interface{}) *ZLog {
+func (l *ZLog) WithFields(fields map[string]interface{}) logging.Logger {
 	return &ZLog{wrapped: l.wrapped.With().Fields(fields).Logger()}
 }
