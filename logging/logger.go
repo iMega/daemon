@@ -21,6 +21,7 @@ type Logger interface {
 	Infof(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
+	WithFields(map[string]interface{}) Logger
 }
 
 // Config is a configuration logger.
@@ -58,3 +59,5 @@ type noopLog struct{}
 func (nl *noopLog) Infof(string, ...interface{})  {}
 func (nl *noopLog) Errorf(string, ...interface{}) {}
 func (nl *noopLog) Debugf(string, ...interface{}) {}
+
+func (nl *noopLog) WithFields(map[string]interface{}) Logger { return nl }

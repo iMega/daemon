@@ -23,3 +23,7 @@ func (l *ZLog) Errorf(format string, args ...interface{}) {
 func (l *ZLog) Debugf(format string, args ...interface{}) {
 	l.wrapped.Debug().Msgf(format, args...)
 }
+
+func (l *ZLog) WithFields(fields map[string]interface{}) *ZLog {
+	return &ZLog{wrapped: l.wrapped.With().Fields(fields).Logger()}
+}
